@@ -6,8 +6,28 @@
 #include "dat.h"
 #include "fncs.h"
 
+void
+finddefmeta(VorbisMeta *v)
+{
+	uint i;
+	for(i=0;i<v->ncom;i++){
+		if(runestrcmp(v->key[i], L"ALBUM") == 0){
+			v->album = v->val[i];
+			continue;
+		}
+		if(runestrcmp(v->key[i], L"TITLE") == 0){
+			v->title = v->val[i];
+			continue;
+		}
+		if(runestrcmp(v->key[i], L"ARTIST") == 0){
+			v->artist = v->val[i];
+			continue;
+		}
+	}
+}
+
 VorbisMeta*
-parseVorbisMeta(int fd, uvlong offset)
+parsevorbismeta(int fd, uvlong offset)
 {
 	u32int size;
 	uchar buf[1024];
@@ -48,5 +68,6 @@ parseVorbisMeta(int fd, uvlong offset)
 		v->val[i] = runesmprint("%s", sep+1);
 	}
 
+	finddefmeta(v);
 	return v;
 }

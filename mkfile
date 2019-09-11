@@ -8,6 +8,8 @@ OFILES=\
 	id3.$O \
 	flac.$O \
 	vorbis.$O \
+	draw.$O \
+	dir.$O \
 
 
 </sys/src/cmd/mkone

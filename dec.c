@@ -55,7 +55,7 @@ ctlproc(void *arg)
 		if(nbrecv(c, &msg) != 0)
 			switch(msg){
 			case STOP:
-				threadexits("Stopped");
+				threadexits(nil);
 				break;
 			case PAUSE:
 				//Block until we get a START message
@@ -68,15 +68,15 @@ ctlproc(void *arg)
 	}
 }
 
-Dec*
-spawndecoder(char *file)
+void
+playfile(Dec *d, char *file)
 {
-	Dec *d;
 	Decodearg *a;
 	Ctlarg *c;
 	int p[2];
 
-	d = emalloc(sizeof(Dec));
+	if(d->ctl != nil)
+		chanfree(d->ctl);
 	
 	pipe(p);
 	a = emalloc(sizeof(Decodearg));
@@ -96,6 +96,4 @@ spawndecoder(char *file)
 
 	close(p[0]);
 	close(p[1]);
-
-	return d;
 }

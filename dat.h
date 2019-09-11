@@ -33,9 +33,17 @@ struct ID3v1{
 
 typedef struct VorbisMeta VorbisMeta;
 struct VorbisMeta{
+	/* Raw values */
 	uint ncom;
 	Rune **key;
 	Rune **val;
+
+	/* Common Tags */
+	Rune *title;
+	Rune *artist;
+	Rune *album;
+	int year;
+	int tracknumber;
 };
 
 typedef struct FlacPic FlacPic;
@@ -45,11 +53,37 @@ struct FlacPic{
 		Point p;
 		uvlong size;
 		uchar *data;
-		Image *i;
 };
 
 typedef struct FlacMeta FlacMeta;
 struct FlacMeta{
 	VorbisMeta *com;
 	FlacPic *pic;
+};
+
+
+enum metatype{
+	FLAC,
+	MP3,
+	VORBIS,
+};
+
+typedef struct Song Song;
+struct Song{
+	enum metatype type;
+	union {
+		FlacMeta *fmeta;
+		VorbisMeta *vmeta;
+		ID3v1 *idmeta;
+	};
+	char *path;
+};
+
+typedef struct Album Album;
+struct Album{
+	char *path;
+	Rune *name;
+	Image *cover;
+	int nsong;
+	Song **songs;
 };

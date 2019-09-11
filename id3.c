@@ -7,7 +7,7 @@
 #include "fncs.h"
 
 ID3v1*
-readID3v1(int fd)
+readid3(int fd)
 {
 	Dir *d;
 	ID3v1 *id;
@@ -57,7 +57,7 @@ readID3v1(int fd)
 }
 
 void
-destroyID3v1(ID3v1 *id)
+destroyid3(ID3v1 *id)
 {
 	free(id->title);
 	free(id->artist);

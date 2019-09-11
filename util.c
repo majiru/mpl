@@ -42,3 +42,17 @@ bebtoi(uchar *buf, int nbyte)
 		out = out | buf[i]<<(--n*8);
 	return out;
 }
+
+void
+kill(int pid)
+{
+	int nfd;
+	char *note = smprint( "/proc/%d/note", pid);
+	nfd = open(note, OWRITE);
+	//If the file does not exist, it is probably already dead
+	if(nfd<0)
+		return;
+	write(nfd, "kill", 4);
+	close(nfd);
+	free(note);
+}
