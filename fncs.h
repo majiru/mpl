@@ -1,5 +1,5 @@
 /* dec.c */
-void	playfile(Dec*,char*);
+void	spawndec(Channel**,Channel**,Channel**);
 
 /* mpl.c */
 void	quit(char*);
@@ -9,6 +9,7 @@ void*	emalloc(vlong);
 u64int	bebtoi(uchar*,int);
 u64int	lebtoi(uchar*,int);
 void	kill(int);
+void	killgrp(int);
 
 /* id3.c */
 ID3v1*	readid3(int);

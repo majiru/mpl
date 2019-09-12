@@ -16,7 +16,7 @@ typedef struct {
 typedef struct {
 	int inpipe;
 	Channel *ctl;
-} Ctlarg;
+} Writearg;
 
 void
 decodeproc(void *arg)
@@ -28,11 +28,13 @@ decodeproc(void *arg)
 	dup(nfd, 0);
 	dup(nfd, 2);
 	dup(a->outpipe, 1);
+	close(nfd);
+	close(a->outpipe);
 	procexecl(a->cpid, "/bin/play", "play", "-o", "/fd/1", a->file, nil);
 }
 
 void
-ctlproc(void *arg)
+writethread(void *arg)
 {
 	int afd;
 	int bufsize;
@@ -40,14 +42,13 @@ ctlproc(void *arg)
 	enum decmsg msg;
 	char *buf;
 	
-	Ctlarg *a = arg;
+	Writearg *a = arg;
 	Channel *c = a->ctl;
 	int inpipe = a->inpipe;
-	free(a);
 
 	afd = open("/dev/audio", OWRITE);
 	if(afd < 0)
-		threadexits("could not open audio device");
+		sysfatal("could not open audio device");
 	bufsize = iounit(afd);
 	buf = emalloc(bufsize);
 
@@ -55,45 +56,130 @@ ctlproc(void *arg)
 		if(nbrecv(c, &msg) != 0)
 			switch(msg){
 			case STOP:
+				free(buf);
+				close(afd);
 				threadexits(nil);
 				break;
 			case PAUSE:
-				//Block until we get a START message
+				/* Block until we get a START message */
 				while(msg != START)
 					recv(c, &msg);
 				break;
 			}
 		n = read(inpipe, buf, bufsize);
 		write(afd, buf, n);
+		yield();
 	}
 }
 
+enum{
+	QUEUE,
+	CTL,
+	WAIT,
+};
+
 void
-playfile(Dec *d, char *file)
+ctlproc(void *arg)
 {
-	Decodearg *a;
-	Ctlarg *c;
+	Channel **chans = arg;
+	Channel *q = chans[0];
+	Channel *c = chans[1];
+	Channel *pop = chans[2];
+	Channel *w = threadwaitchan();
+	free(chans);
+
+	char *path;
+	enum decmsg msg;
+	Waitmsg *wmsg;
+
+	Decodearg a;
+	Writearg wr;
 	int p[2];
+	/* This allows for the main thread to kill the decoder on exit */
+	extern int decpid = -1;
 
-	if(d->ctl != nil)
-		chanfree(d->ctl);
-	
+	Alt alts[] = {
+		{q, &path, CHANRCV},
+		{c, &msg,  CHANRCV},
+		{w, &wmsg, CHANRCV},
+		{nil, nil, CHANEND},
+	};
+
 	pipe(p);
-	a = emalloc(sizeof(Decodearg));
-	a->cpid = chancreate(sizeof(int), 0);
-	a->outpipe = p[1];
-	a->file = file;
-	procrfork(decodeproc, a, 8192, RFFDG);
-	recv(a->cpid, &(d->decpid));
-	chanfree(a->cpid);
-	free(a);
 
-	c = emalloc(sizeof(Ctlarg));
-	c->ctl = d->ctl = chancreate(sizeof(enum decmsg), 0);
-	c->inpipe = p[0];
-	d->ctlpid = procrfork(ctlproc, c, 8192, RFFDG);
-	/* Other proc frees c */
+	a.cpid = chancreate(sizeof(int), 0);
+	a.outpipe = p[0];
 
+	wr.ctl = chancreate(sizeof(enum decmsg), 0);
+	wr.inpipe = p[1];
+
+	/* Start first song to stop blocks on writethread read */
+	a.file = recvp(q);
+	procrfork(decodeproc, &a, 8192, RFFDG);
+	recv(a.cpid, &decpid);
+	threadcreate(writethread, &wr, 8192);
+
+	for(;;){
+		switch(alt(alts)){
+			case WAIT:
+				if(strstr(wmsg->msg, "eof")){
+					decpid = -1;
+					send(pop, nil);
+				}
+				free(wmsg);
+				break;
+			case CTL:
+				if(msg == NEXT){
+					killgrp(decpid);
+					decpid = -1;
+					send(pop, nil);
+				}else
+					send(wr.ctl, &msg);
+				break;
+			case QUEUE:
+				a.file = path;
+				if(decpid != -1)
+					killgrp(decpid);
+				procrfork(decodeproc, &a, 8192, RFFDG);
+				recv(a.cpid, &decpid);
+				break;
+			default:
+				goto cleanup;
+		}
+	}
+
+
+cleanup:
+	if(decpid != -1)
+		killgrp(decpid);
+	chanfree(wr.ctl);
+	chanfree(a.cpid);
 	close(p[0]);
 	close(p[1]);
+
+}
+
+/*
+* Spawns the decoder processes.
+* q is a queue for next songs. chan char*
+* c is for sending control messages. chan enum decmsg
+* nil msg is sent over pop on song change.
+*/
+void
+spawndec(Channel **q, Channel **c, Channel **pop)
+{
+	Channel **chans = emalloc(sizeof(Channel*) * 3);
+
+	if(*q == nil)
+		*q = chancreate(sizeof(char*), 0);
+	if(*c == nil)
+		*c = chancreate(sizeof(enum decmsg), 0);
+	if(*pop == nil)
+		*pop = chancreate(sizeof(char), 0);
+
+	chans[0] = *q;
+	chans[1] = *c;
+	chans[2] = *pop;
+
+	procrfork(ctlproc, chans, 8192, RFFDG);
 }

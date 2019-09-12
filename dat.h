@@ -2,17 +2,7 @@ enum decmsg{
 	START,
 	STOP,
 	PAUSE,
-};
-
-/*
-* Dec represents a decoder process.
-* ctl is the control channel for pausing, starting, and stoping the proc.
-*/
-typedef struct Dec Dec;
-struct Dec{
-	int		decpid;
-	int		ctlpid;
-	Channel	*ctl;
+	NEXT,
 };
 
 /*

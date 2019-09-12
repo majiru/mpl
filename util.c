@@ -49,10 +49,24 @@ kill(int pid)
 	int nfd;
 	char *note = smprint( "/proc/%d/note", pid);
 	nfd = open(note, OWRITE);
-	//If the file does not exist, it is probably already dead
 	if(nfd<0)
-		return;
-	write(nfd, "kill", 4);
+		sysfatal("proc doesn't exist");
+	if(write(nfd, "kill", 4)!=4)
+		sysfatal("could not write to note");
+	close(nfd);
+	free(note);
+}
+
+void
+killgrp(int pid)
+{
+	int nfd;
+	char *note = smprint( "/proc/%d/notepg", pid);
+	nfd = open(note, OWRITE);
+	if(nfd<0)
+		sysfatal("proc doesn't exist");
+	if(write(nfd, "kill", 4)!=4)
+		sysfatal("could not write to note");
 	close(nfd);
 	free(note);
 }

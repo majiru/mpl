@@ -13,19 +13,25 @@ enum {
 	MOUSEC,
 	RESIZEC,
 	KEYC,
+	QUEUEPOP,
 	NONE
 };
 
 
 Mousectl 	*mctl;
 Keyboardctl *kctl;
+Channel		*queuein;
+Channel		*queueout;
+Channel		*ctl;
 Album		*a;
-Dec 		d;
-int		cursong;
+int			cursong;
+int			decpid;
 
 Image *black;
 Image *red;
 Image *background;
+
+enum decmsg msg;
 
 void
 quit(char *err)
@@ -47,25 +53,21 @@ eresized(int isnew)
 	flushimage(display, Refnone);
 }
 
-void
-play(void)
+char*
+nextsong(void)
 {
-	enum decmsg msg = STOP;
-	send(d.ctl, &msg);
-	kill(d.decpid);
 	cursong = cursong < 0 ? a->nsong-1 : cursong;
 	cursong = cursong > a->nsong-1 ? 0 : cursong;
-	playfile(&d, a->songs[cursong]->path);
-	eresized(0);
+	return a->songs[cursong]->path;
 }
 
 void
 handleaction(Rune kbd)
 {
-	enum decmsg msg;
 	switch(kbd){
 		case Kbs:
 		case Kdel:
+			killgrp(decpid);
 			quit(nil);
 			break;
 		case 'w':
@@ -73,19 +75,23 @@ handleaction(Rune kbd)
 			break;
 		case 'p':
 			msg = PAUSE;
-			send(d.ctl, &msg);
+			send(ctl, &msg);
 			break;
 		case 'l':
 			msg = START;
-			send(d.ctl, &msg);
+			send(ctl, &msg);
 			break;
 		case 'n':
 			cursong++;
-			play();
+			nextsong();
+			sendp(queuein, nextsong());
+			eresized(0);
 			break;
 		case 'm':
 			cursong--;
-			play();
+			nextsong();
+			sendp(queuein, nextsong());
+			eresized(0);
 			break;
 	}
 }
@@ -104,6 +110,7 @@ threadmain(int argc, char *argv[])
 	Rune kbd;
 	int resize[2];
 	cursong = 0;
+	queuein = queueout = ctl = nil;
 
 	//TODO: Use ARGBEGIN
 	argv0 = argv[0];	
@@ -118,7 +125,6 @@ threadmain(int argc, char *argv[])
 	if((kctl = initkeyboard(nil)) == nil)
 		sysfatal("initkeyboard: %r");
 
-	memset(&d, 0, sizeof d);
 	red = allocimage(display, Rect(0, 0, 1, 1), screen->chan, 1, DBlue);
 	black = allocimage(display, Rect(0, 0, 1, 1), screen->chan, 1, DBlack);
 	background = allocimagemix(display, DPaleyellow, DPalegreen);
@@ -128,13 +134,15 @@ threadmain(int argc, char *argv[])
 		quit("nil album");
 	if(a->nsong == 0)
 		quit("no songs");
-	playfile(&d, a->songs[0]->path);
+	spawndec(&queuein, &ctl, &queueout);
+	send(queuein, &(a->songs[0]->path));
 	handleaction('w');
 
 	Alt alts[] = {
 		{mctl->c, &mouse, CHANRCV},
 		{mctl->resizec, resize, CHANRCV},
 		{kctl->c, &kbd, CHANRCV},
+		{queueout, nil, CHANRCV},
 		{nil, nil, CHANEND},
 	};
 
@@ -145,6 +153,9 @@ threadmain(int argc, char *argv[])
 				break;
 			case RESIZEC:
 				eresized(1);
+				break;
+			case QUEUEPOP:
+				handleaction(L'n');
 				break;
 		}
 	}
