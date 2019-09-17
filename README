@@ -1,0 +1,20 @@
+mpl is a graphical music play for 9front
+
+Building:
+	; mk
+
+Installing:
+	; mk install
+
+Usage:
+	The only argument to mpl is the 'library dir' which is expected to
+	have subdirs coresponding to one album each.
+
+Within the program:
+	'n' skips the next song, 'm' to the previous.
+	'p' pauses the song and 'l' resumes.
+	Del/Backspace exit out of the program.
+
+Planned features:
+	* Mouse support
+	* db file for speeding up load times of seen libraries.
