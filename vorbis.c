@@ -11,15 +11,15 @@ finddefmeta(VorbisMeta *v)
 {
 	uint i;
 	for(i=0;i<v->ncom;i++){
-		if(runestrcmp(v->key[i], L"ALBUM") == 0){
+		if(runecstrcmp(v->key[i], L"album") == 0){
 			v->album = v->val[i];
 			continue;
 		}
-		if(runestrcmp(v->key[i], L"TITLE") == 0){
+		if(runecstrcmp(v->key[i], L"title") == 0){
 			v->title = v->val[i];
 			continue;
 		}
-		if(runestrcmp(v->key[i], L"ARTIST") == 0){
+		if(runecstrcmp(v->key[i], L"artist") == 0){
 			v->artist = v->val[i];
 			continue;
 		}

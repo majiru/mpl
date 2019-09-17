@@ -133,16 +133,18 @@ convpicbuf(uchar *buf, uvlong size, char *mime)
 	return i;
 }
 
-void
-drawalbum(Album *a, Image *textcolor, Image *active, int cursong)
+Point
+drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong)
 {
 	uint i;
-	Point p = screen->r.min;
 	Font *f = screen->display->defaultfont;
 	Rune *tracktitle = nil;
+	Point p = start;
 
-	draw(screen, screen->r, a->cover, nil, ZP);
-	p.x += a->cover->r.max.x;
+	if(a->cover != nil){
+		draw(screen, Rpt(p, addpt(p, a->cover->r.max)), a->cover, nil, ZP);
+		p.x += a->cover->r.max.x;
+	}
 
 	runestring(screen, p, textcolor, ZP, f, a->name);
 	p.y += f->height * 2;
@@ -162,5 +164,19 @@ drawalbum(Album *a, Image *textcolor, Image *active, int cursong)
 		runestring(screen, p, i == cursong ? active : textcolor, ZP, f, tracktitle);
 		p.y += f->height;
 	}
+	start.y+=256;
+	return start;
 }
 
+void
+drawlibrary(Album *start, Album *stop, Album *cur, Image *textcolor, Image *active, int cursong)
+{
+	Point p = screen->r.min;
+	int height = screen->r.max.y - screen->r.min.y;
+	Album *screenstop = start+(height/256)-1;
+	stop = screenstop < stop ? screenstop : stop;
+	stop+=1;
+
+	for(;start!=stop;start++)
+		p = drawalbum(start, textcolor, active, p, start ==  cur ? cursong : -1);
+}

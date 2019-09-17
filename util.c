@@ -70,3 +70,21 @@ killgrp(int pid)
 	close(nfd);
 	free(note);
 }
+
+int
+runecstrcmp(Rune *s1, Rune *s2)
+{
+	Rune c1, c2;
+
+	for(;;) {
+		c1 = tolowerrune(*s1++);
+		c2 = tolowerrune(*s2++);
+		if(c1 != c2) {
+			if(c1 > c2)
+				return 1;
+			return -1;
+		}
+		if(c1 == 0)
+			return 0;
+	}
+}

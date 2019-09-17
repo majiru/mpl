@@ -23,7 +23,7 @@ Keyboardctl *kctl;
 Channel		*queuein;
 Channel		*queueout;
 Channel		*ctl;
-Album		*a;
+Album		*start, *cur, *stop;
 int			cursong;
 int			decpid;
 
@@ -49,16 +49,26 @@ eresized(int isnew)
 		quit("eresized: Can't reattach to window");
 
 	draw(screen, screen->r, background, nil, ZP);
-	drawalbum(a, black, red, cursong);
+	drawlibrary(cur, stop, cur, black, red, cursong);
 	flushimage(display, Refnone);
 }
 
 char*
 nextsong(void)
 {
-	cursong = cursong < 0 ? a->nsong-1 : cursong;
-	cursong = cursong > a->nsong-1 ? 0 : cursong;
-	return a->songs[cursong]->path;
+	if(cursong < 0){
+		cur--;
+		if(cur < start)
+			cur = stop;
+		cursong = cur->nsong-1;
+	}
+	if(cursong > cur->nsong-1){
+		cur++;
+		if(cur > stop)
+			cur = start;
+		cursong = 0;
+	}
+	return cur->songs[cursong]->path;
 }
 
 void
@@ -109,6 +119,7 @@ threadmain(int argc, char *argv[])
 	Mouse mouse;
 	Rune kbd;
 	int resize[2];
+	int nalbum;
 	cursong = 0;
 	queuein = queueout = ctl = nil;
 
@@ -129,13 +140,13 @@ threadmain(int argc, char *argv[])
 	black = allocimage(display, Rect(0, 0, 1, 1), screen->chan, 1, DBlack);
 	background = allocimagemix(display, DPaleyellow, DPalegreen);
 
-	a = dir2album(argv[1]);
-	if(a == nil)
-		quit("nil album");
-	if(a->nsong == 0)
-		quit("no songs");
+	nalbum = parselibrary(&start, argv[1]);
+	if(nalbum == 0)
+		quit("No songs found");
+	cur = start;
+	stop = start+(nalbum-1);
 	spawndec(&queuein, &ctl, &queueout);
-	send(queuein, &(a->songs[0]->path));
+	send(queuein, &(cur->songs[0]->path));
 	handleaction('w');
 
 	Alt alts[] = {

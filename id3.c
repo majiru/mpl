@@ -6,6 +6,19 @@
 #include "dat.h"
 #include "fncs.h"
 
+/* If we can't read the tag, at least default to file names */
+void
+fillnotag(ID3v1 *id, int fd)
+{
+	char buf[512];
+	char *slash, *dot;
+	fd2path(fd, buf, 512);
+	slash = strrchr(buf, '/');
+	dot = strrchr(buf, '.');
+	*dot = '\0';
+	id->title = runesmprint("%s", slash+1);
+}
+
 ID3v1*
 readid3(int fd)
 {
@@ -23,11 +36,13 @@ readid3(int fd)
 
 	if(pread(fd, buf, 128, length-128) != 128)
 		return nil;
-	
-	if(memcmp(buf, "TAG", 3) != 0)
-		return nil;
 
 	id = emalloc(sizeof(ID3v1));
+
+	if(memcmp(buf, "TAG", 3) != 0){
+		fillnotag(id, fd);
+		return id;
+	}
 
 	memcpy(fieldbuf, buf+3, 30);
 	fieldbuf[30] = '\0';

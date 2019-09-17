@@ -50,6 +50,12 @@ writethread(void *arg)
 	if(afd < 0)
 		sysfatal("could not open audio device");
 	bufsize = iounit(afd);
+	/*
+	* On native plan9 installs this will return 0,
+	* so we default to the default iosize.
+	*/
+	if(bufsize == 0)
+		bufsize = 8192;
 	buf = emalloc(bufsize);
 
 	for(;;){

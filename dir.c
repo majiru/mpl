@@ -62,10 +62,9 @@ error:
 	return nil;
 }
 
-Album*
-dir2album(char *path)
+void
+dir2album(Album *a, char *path)
 {
-	Album *a;
 	Dir *files;
 	int fd;
 	long n;
@@ -78,21 +77,23 @@ dir2album(char *path)
 
 	fd = open(path, OREAD);
 	if(fd < 0)
-		return nil;
+		return;
 
 	n = dirreadall(fd, &files);
 	close(fd);
 	if(n <= 0)
-		return nil;
-
-	a = emalloc(sizeof(Album));
+		return;
 
 	/* Do a single pass to find cover.^(jp^(eg g) png) */
 	for(i=0;i<n;i++){
-		dot = strstr(path, "cover.");
-		if(dot == nil)
-			continue;
-		dot+=1;
+		dot = cistrstr(files[i].name, "cover.");
+		if(dot == nil){
+			dot = cistrstr(files[i].name, "folder.");
+			if(dot == nil)
+				continue;
+		}
+		dot = strrchr(dot, '.');
+		dot++;
 		snprint(buf, 512, "%s/%s", path, files[i].name);
 		fd = open(buf, OREAD);
 		if(fd<0)
@@ -101,8 +102,10 @@ dir2album(char *path)
 		a->cover = convpic(fd, dot);
 		if(a->cover != nil){
 			needpic = 0;
+			close(fd);
 			break;
 		}
+		close(fd);
 	}
 
 	/* Greedy alloc to start, we will trim down later */
@@ -146,5 +149,42 @@ dir2album(char *path)
 	a->songs = realloc(a->songs, sizeof(Song*) * songcount);
 
 	free(files);
-	return a;
+	return;
+}
+
+int
+parselibrary(Album **als, char *path)
+{
+	Dir *files;
+	int fd;
+	uint n, i;
+	uint numdirs = 0;
+	uint alcount = 0;
+	char buf[512];
+
+	fd = open(path, OREAD);
+	if(fd < 0)
+		return 0;
+
+	n = dirreadall(fd, &files);
+	close(fd);
+	if(n <= 0)
+		return 0;
+
+	for(i=0;i<n;i++)
+		if(files[i].qid.type&QTDIR)
+			numdirs++;
+
+	*als = emalloc(sizeof(Album)*numdirs);
+	for(i=0;i<n;i++)
+		if(files[i].qid.type&QTDIR){
+			snprint(buf, 512, "%s/%s", path, files[i].name);
+			dir2album(*als+alcount, buf);
+			if(*als+alcount != nil)
+				alcount++;
+		}
+
+	*als = realloc(*als, sizeof(Album)*alcount);
+
+	return alcount;
 }
