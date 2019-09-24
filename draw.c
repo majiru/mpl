@@ -164,7 +164,10 @@ drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong)
 		runestring(screen, p, i == cursong ? active : textcolor, ZP, f, tracktitle);
 		p.y += f->height;
 	}
-	start.y+=256;
+	if(p.y > start.y+256)
+		start.y = p.y;
+	else
+		start.y+=256;
 	return start;
 }
 
@@ -178,5 +181,20 @@ drawlibrary(Album *start, Album *stop, Album *cur, Image *textcolor, Image *acti
 	stop+=1;
 
 	for(;start!=stop;start++)
-		p = drawalbum(start, textcolor, active, p, start ==  cur ? cursong : -1);
+		p = drawalbum(start, textcolor, active, p, start == cur ? cursong : -1);
+	flushimage(display, Refnone);
+}
+
+void
+drawvolume(int level, Image* color)
+{
+	Point p;
+	char buf[128];
+	Font *f = screen->display->defaultfont;
+	int n = snprint(buf, sizeof buf, "Vol: %d%%", level);
+	p.y = screen->r.min.y;
+	p.x = screen->r.max.x;
+	p.x-=(n*f->width);
+	string(screen, p, color, ZP, f, buf);
+	flushimage(display, Refnone);
 }

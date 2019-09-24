@@ -160,7 +160,7 @@ parselibrary(Album **als, char *path)
 	uint n, i;
 	uint numdirs = 0;
 	uint alcount = 0;
-	char buf[512];
+	char buf[1024];
 
 	fd = open(path, OREAD);
 	if(fd < 0)
