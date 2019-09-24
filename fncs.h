@@ -30,5 +30,4 @@ void	drawlibrary(Album*, Album*, Album*, Image*, Image*, int);
 void	drawvolume(int, Image*);
 
 /* dir.c */
-void	dir2album(Album*,char*);
 int		parselibrary(Album**,char*);

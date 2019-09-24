@@ -127,14 +127,6 @@ handleaction(Rune kbd)
 }
 
 void
-usage(void)
-{
-	fprint(2, "Usage: %s file", argv0);
-	sysfatal("usage");
-}
-
-
-void
 readvol(int fd, int *level)
 {
 	int n;
@@ -172,6 +164,12 @@ writevol(int fd, int level)
 	write(fd, buf, n);
 }
 
+void
+usage(void)
+{
+	fprint(2, "Usage: %s file", argv0);
+	sysfatal("usage");
+}
 
 void
 volthread(void *arg)

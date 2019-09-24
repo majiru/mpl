@@ -62,7 +62,50 @@ error:
 	return nil;
 }
 
-void
+int
+songcmp(void *a, void *b)
+{
+	Song *s1 = *((Song**)a);
+	Song *s2 = *((Song**)b);
+	int t1, t2;
+	t1 = t2 = 0;
+
+	//ID3 does not hold tracknumber so we assume all are equal
+	if(s1->type == MP3 || s2->type == MP3)
+		return 0;
+
+	switch(s1->type){
+	case FLAC:
+		t1 = s1->fmeta->com->tracknumber;
+		break;
+	case VORBIS:
+		t1 = s1->vmeta->tracknumber;
+		break;
+	default:
+		sysfatal("bad type in songcmp");
+	}
+
+	switch(s2->type){
+	case FLAC:
+		t2 = s2->fmeta->com->tracknumber;
+		break;
+	case VORBIS:
+		t2 = s2->vmeta->tracknumber;
+		break;
+	default:
+		sysfatal("bad type in songcmp");
+	}
+
+	if(t1 < t2)
+		return -1;
+
+	if(t1 > t2)
+		return 1;
+
+	return 0;
+}
+
+int
 dir2album(Album *a, char *path)
 {
 	Dir *files;
@@ -77,12 +120,12 @@ dir2album(Album *a, char *path)
 
 	fd = open(path, OREAD);
 	if(fd < 0)
-		return;
+		return 0;
 
 	n = dirreadall(fd, &files);
 	close(fd);
 	if(n <= 0)
-		return;
+		return 0;
 
 	/* Do a single pass to find cover.^(jp^(eg g) png) */
 	for(i=0;i<n;i++){
@@ -148,8 +191,10 @@ dir2album(Album *a, char *path)
 	a->nsong = songcount;
 	a->songs = realloc(a->songs, sizeof(Song*) * songcount);
 
+	qsort(a->songs, songcount, sizeof(Song*), songcmp);
+
 	free(files);
-	return;
+	return 1;
 }
 
 int
@@ -180,7 +225,7 @@ parselibrary(Album **als, char *path)
 		if(files[i].qid.type&QTDIR){
 			snprint(buf, 512, "%s/%s", path, files[i].name);
 			dir2album(*als+alcount, buf);
-			if(*als+alcount != nil)
+			if(dir2album(*als+alcount, buf))
 				alcount++;
 		}
 

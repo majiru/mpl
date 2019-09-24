@@ -23,6 +23,12 @@ finddefmeta(VorbisMeta *v)
 			v->artist = v->val[i];
 			continue;
 		}
+		if(runecstrcmp(v->key[i], L"tracknumber") == 0){
+			char buf[16];
+			snprint(buf, sizeof buf, "%S", v->val[i]);
+			v->tracknumber = atoi(buf);
+			continue;
+		}
 	}
 }
 
