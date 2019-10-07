@@ -1,16 +1,17 @@
-enum decmsg{
-	START,
-	STOP,
-	PAUSE,
+enum cmsg{
 	NEXT,
+	PREV,
+	STOP,
+	START,
+	PAUSE,
 };
 
 /*
-* ID3v1 represents the first version of ID3 metainformation.
-* The spec does not define character set, so we treat it as 
-* UTF8, which should cover most bases.
-* See: http://id3.org/ID3v1
-*/
+ * ID3v1 represents the first version of ID3 metainformation.
+ * The spec does not define character set, so we treat it as
+ * UTF8, which should cover most bases.
+ * See: http://id3.org/ID3v1
+ */
 typedef struct ID3v1 ID3v1;
 struct ID3v1{
 	Rune 	*title;
@@ -76,4 +77,27 @@ struct Album{
 	Image *cover;
 	int nsong;
 	Song **songs;
+};
+
+typedef struct Lib Lib;
+struct Lib{
+	int nalbum, cursong;
+	Album *start, *stop, *cur;
+};
+
+/*
+ * Simple hashmap implementation.
+ * Hnode key must be non nil.
+ */
+typedef struct Hmap Hmap;
+typedef struct Hnode Hnode;
+struct Hmap{
+	RWLock;
+	int size;
+	int (*hashfn)(void*);
+	struct Hnode{
+		char *key;
+		void *val;
+		Hnode *next;
+	} *nodes;
 };

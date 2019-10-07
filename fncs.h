@@ -31,3 +31,12 @@ void	drawvolume(int, Image*);
 
 /* dir.c */
 int		parselibrary(Album**,char*);
+
+/* dat.c */
+Hmap*	allocmap(int);
+void	mapinsert(Hmap*,char*,void*);
+int		mapdel(Hmap*,char*);
+void*	mapget(Hmap*,char*);
+
+/* lib.c */
+void	spawnlib(Channel*,Channel*,char*);

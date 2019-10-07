@@ -112,11 +112,10 @@ dir2album(Album *a, char *path)
 	int fd;
 	long n;
 	long i;
-	char *dot;
 	Rune *albumtitle;
 	char buf[512];
 	int songcount = 0;
-	int needpic = 1;
+	int needpic = 0;
 
 	fd = open(path, OREAD);
 	if(fd < 0)
@@ -127,37 +126,13 @@ dir2album(Album *a, char *path)
 	if(n <= 0)
 		return 0;
 
-	/* Do a single pass to find cover.^(jp^(eg g) png) */
-	for(i=0;i<n;i++){
-		dot = cistrstr(files[i].name, "cover.");
-		if(dot == nil){
-			dot = cistrstr(files[i].name, "folder.");
-			if(dot == nil)
-				continue;
-		}
-		dot = strrchr(dot, '.');
-		dot++;
-		snprint(buf, 512, "%s/%s", path, files[i].name);
-		fd = open(buf, OREAD);
-		if(fd<0)
-			continue;
-
-		a->cover = convpic(fd, dot);
-		if(a->cover != nil){
-			needpic = 0;
-			close(fd);
-			break;
-		}
-		close(fd);
-	}
-
 	/* Greedy alloc to start, we will trim down later */
 	a->nsong = n;
 	a->songs = emalloc(sizeof(Song*) * n);
 
 	for(i=0;i<n;i++){
 		snprint(buf, 512, "%s/%s", path, files[i].name);
-		a->songs[songcount] = file2song(buf, needpic);
+		a->songs[songcount] = file2song(buf, needpic++);
 		if(a->songs[songcount] == nil)
 			continue;
 		if(a->name == nil){
@@ -178,13 +153,6 @@ dir2album(Album *a, char *path)
 				a->name = runesmprint("%S",  albumtitle);
 		}
 		a->songs[songcount]->path = strdup(buf);
-		if(needpic == 1 && a->songs[songcount]->type == FLAC && a->songs[songcount]->fmeta->pic != nil){
-			FlacPic *p = a->songs[songcount]->fmeta->pic;
-			a->cover = convpicbuf(p->data, p->size, p->mime);
-			if(a->cover == nil)
-				quit("dir2album: Could not convert image");
-			needpic--;
-		}
 		songcount++;
 	}
 

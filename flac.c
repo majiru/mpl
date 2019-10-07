@@ -40,9 +40,13 @@ readflacpic(int fd, vlong offset)
 	len = bebtoi(buf, 4);
 	offset+=4;
 
+	/* This seems to be taking a large chunk of time;
+	 * For now we don't need it
 	pread(fd, buf, len, offset);
 	buf[len] = '\0';
 	pic->desc = runesmprint("%s", (char*)buf);
+	*/
+
 	offset+=len;
 
 	pread(fd, buf, 4, offset);

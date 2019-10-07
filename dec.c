@@ -39,7 +39,7 @@ writethread(void *arg)
 	int afd;
 	int bufsize;
 	int n;
-	enum decmsg msg;
+	enum cmsg msg;
 	char *buf;
 	
 	Writearg *a = arg;
@@ -95,7 +95,7 @@ ctlproc(void *arg)
 	free(chans);
 
 	char *path;
-	enum decmsg msg;
+	enum cmsg msg;
 	Waitmsg *wmsg;
 
 	Decodearg a;
@@ -116,7 +116,7 @@ ctlproc(void *arg)
 	a.cpid = chancreate(sizeof(int), 0);
 	a.outpipe = p[0];
 
-	wr.ctl = chancreate(sizeof(enum decmsg), 0);
+	wr.ctl = chancreate(sizeof(enum cmsg), 0);
 	wr.inpipe = p[1];
 
 	/* Start first song to stop blocks on writethread read */
@@ -168,7 +168,7 @@ cleanup:
 /*
 * Spawns the decoder processes.
 * q is a queue for next songs. chan char*
-* c is for sending control messages. chan enum decmsg
+* c is for sending control messages. chan enum cmsg
 * nil msg is sent over pop on song change.
 */
 void
@@ -179,7 +179,7 @@ spawndec(Channel **q, Channel **c, Channel **pop)
 	if(*q == nil)
 		*q = chancreate(sizeof(char*), 0);
 	if(*c == nil)
-		*c = chancreate(sizeof(enum decmsg), 0);
+		*c = chancreate(sizeof(enum cmsg), 0);
 	if(*pop == nil)
 		*pop = chancreate(sizeof(char), 0);
 

@@ -10,6 +10,8 @@ OFILES=\
 	vorbis.$O \
 	draw.$O \
 	dir.$O \
+	dat.$O \
+	lib.$O \
 
 
 </sys/src/cmd/mkone

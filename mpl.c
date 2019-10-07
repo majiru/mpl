@@ -13,7 +13,6 @@ enum {
 	MOUSEC,
 	RESIZEC,
 	KEYC,
-	QUEUEPOP,
 	NONE
 };
 
@@ -22,23 +21,28 @@ enum volmsg{
 	DOWN,
 	MUTE,
 	UNMUTE,
-	DRAW,
 };
 
 
 Mousectl 	*mctl;
 Keyboardctl *kctl;
-Channel		*queuein;
-Channel		*queueout;
-Channel		*ctl;
-Channel		*vctl;
-Album		*start, *cur, *stop;
-int			cursong;
+Channel		*ctl, *lout;
+Channel		*vctl, *vlevel;
 int			decpid;
 
 Image *black;
 Image *red;
 Image *background;
+
+int
+cleanup(void*,char*)
+{
+	killgrp(decpid);
+	closedisplay(display);
+	closemouse(mctl);
+	closekeyboard(kctl);
+	return 0;
+}
 
 void
 quit(char *err)
@@ -52,78 +56,58 @@ quit(char *err)
 void
 eresized(int isnew)
 {
-	enum volmsg vmsg = DRAW;
+	int level;
+	Lib lib;
 	if(isnew && getwindow(display, Refnone) < 0)
 		quit("eresized: Can't reattach to window");
 
 	draw(screen, screen->r, background, nil, ZP);
-	drawlibrary(cur, stop, cur, black, red, cursong);
-	send(vctl, &vmsg);
-}
-
-char*
-nextsong(void)
-{
-	if(cursong < 0){
-		cur--;
-		if(cur < start)
-			cur = stop;
-		cursong = cur->nsong-1;
-	}
-	if(cursong > cur->nsong-1){
-		cur++;
-		if(cur > stop)
-			cur = start;
-		cursong = 0;
-	}
-	return cur->songs[cursong]->path;
+	recv(lout, &lib);
+	drawlibrary(lib.cur, lib.stop, lib.cur, black, red, lib.cursong);
+	recv(vlevel, &level);
+	drawvolume(level, black);
+	flushimage(display, Refnone);
 }
 
 void
 handleaction(Rune kbd)
 {
 	enum volmsg vmsg;
-	enum decmsg msg;
+	enum cmsg msg;
 	switch(kbd){
 		case Kbs:
 		case Kdel:
 			killgrp(decpid);
 			quit(nil);
-			break;
+			return;
 		case 'w':
-			eresized(0);
 			break;
 		case 'p':
 			msg = PAUSE;
 			send(ctl, &msg);
-			break;
+			return;
 		case 'l':
 			msg = START;
 			send(ctl, &msg);
-			break;
+			return;
 		case 'n':
-			cursong++;
-			nextsong();
-			sendp(queuein, nextsong());
-			eresized(0);
+			msg = NEXT;
+			send(ctl, &msg);
 			break;
 		case 'm':
-			cursong--;
-			nextsong();
-			sendp(queuein, nextsong());
-			eresized(0);
+			msg = PREV;
+			send(ctl, &msg);
 			break;
 		case '9':
 			vmsg = DOWN;
 			send(vctl, &vmsg);
-			eresized(0);
 			break;
 		case '0':
 			vmsg = UP;
 			send(vctl, &vmsg);
-			eresized(0);
 			break;
 	}
+	eresized(0);
 }
 
 void
@@ -165,50 +149,61 @@ writevol(int fd, int level)
 }
 
 void
-usage(void)
-{
-	fprint(2, "Usage: %s file", argv0);
-	sysfatal("usage");
-}
-
-void
 volthread(void *arg)
 {
-	Channel *ctl = arg;
+	Channel **chans = arg;
+	Channel *ctl = chans[0];
+	Channel *out = chans[1];
+
 	int fd;
-	int mlevel, level;
+	int level;
+	int muted = 0;
 	enum volmsg vmsg;
 
 	if((fd = open("/dev/volume", ORDWR))<0){
 		/* Make volume controls NOP */
 		chanclose(ctl);
+		chanclose(out);
 		return;
 	}
+
+	Alt alts[] = {
+		{ctl, &vmsg, CHANRCV},
+		{out, &level, CHANSND},
+		{nil, nil, CHANEND},
+	};
+
+	readvol(fd, &level);
 	for(;;){
-		recv(ctl, &vmsg);
+		if(alt(alts) != 0)
+			continue;
 		readvol(fd, &level);
 		switch(vmsg){
 		case UP:
 			level+=5;
-			writevol(fd, level);
+			writevol(fd, muted == 0 ? level : 0);
 			break;
 		case DOWN:
 			level-=5;
-			writevol(fd, level);
+			writevol(fd, muted == 0 ? level : 0);
 			break;
 		case MUTE:
-			mlevel = level;
-			level = 0;
-			writevol(fd, level);
+			muted = 1;
+			writevol(fd, 0);
 			break;
 		case UNMUTE:
-			level = mlevel;
+			muted = 0;
 			writevol(fd, level);
 			break;
-		case DRAW:
-			drawvolume(level, black);
 		}
 	}
+}
+
+void
+usage(void)
+{
+	fprint(2, "Usage: %s file", argv0);
+	sysfatal("usage");
 }
 
 void
@@ -217,12 +212,12 @@ threadmain(int argc, char *argv[])
 	Mouse mouse;
 	Rune kbd;
 	int resize[2];
-	int nalbum;
-	cursong = 0;
-	queuein = queueout = ctl = vctl = nil;
+	Channel *vchans[2];
+	ctl = vctl = vlevel = nil;
 
 	//TODO: Use ARGBEGIN
-	argv0 = argv[0];	
+	argv0 = argv[0];
+	threadnotify(cleanup, 1);
 
 	if(argc != 2)
 		usage();
@@ -234,27 +229,26 @@ threadmain(int argc, char *argv[])
 	if((kctl = initkeyboard(nil)) == nil)
 		sysfatal("initkeyboard: %r");
 
+	ctl = chancreate(sizeof(enum cmsg), 0);
+	lout = chancreate(sizeof(Lib), 0);
+	spawnlib(ctl, lout, argv[1]);
+
 	vctl = chancreate(sizeof(enum volmsg), 0);
-	threadcreate(volthread, vctl, 8192);
+	vlevel = chancreate(sizeof(int), 0);
+	vchans[0] = vctl;
+	vchans[1] = vlevel;
+	threadcreate(volthread, vchans, 8192);
 
 	red = allocimage(display, Rect(0, 0, 1, 1), screen->chan, 1, DBlue);
 	black = allocimage(display, Rect(0, 0, 1, 1), screen->chan, 1, DBlack);
 	background = allocimagemix(display, DPaleyellow, DPalegreen);
 
-	nalbum = parselibrary(&start, argv[1]);
-	if(nalbum == 0)
-		quit("No songs found");
-	cur = start;
-	stop = start+(nalbum-1);
-	spawndec(&queuein, &ctl, &queueout);
-	send(queuein, &(cur->songs[0]->path));
-	handleaction('w');
+	eresized(0);
 
 	Alt alts[] = {
 		{mctl->c, &mouse, CHANRCV},
 		{mctl->resizec, resize, CHANRCV},
 		{kctl->c, &kbd, CHANRCV},
-		{queueout, nil, CHANRCV},
 		{nil, nil, CHANEND},
 	};
 
@@ -265,9 +259,6 @@ threadmain(int argc, char *argv[])
 				break;
 			case RESIZEC:
 				eresized(1);
-				break;
-			case QUEUEPOP:
-				handleaction(L'n');
 				break;
 		}
 	}

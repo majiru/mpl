@@ -42,7 +42,7 @@ picexecproc(void *arg)
 	ExecArg *a = arg;
 	dup(a->fdin, 0);
 	dup(a->fdout, 1);
-	procexecl(a->cpid, a->cmd, a->cmd, "-c", nil);
+	procexecl(a->cpid, a->cmd, a->cmd, "-9", nil);
 }
 
 void
@@ -133,6 +133,57 @@ convpicbuf(uchar *buf, uvlong size, char *mime)
 	return i;
 }
 
+Image*
+readcover(Song *s)
+{
+	FlacPic *p;
+	char buf[512], cover[512];
+	char *dot, *end;
+	int fd, n, i;
+	Dir *files;
+	Image *im;
+
+	if(s->type == FLAC && s->fmeta->pic != nil){
+		p = s->fmeta->pic;
+		return convpicbuf(p->data, p->size, p->mime);
+	}
+
+	dot = strrchr(s->path, '/');
+	if(dot == nil)
+		sysfatal("readcover: bad song path");
+	end = buf+(dot-s->path)+1;
+	if(end - buf > sizeof buf)
+		sysfatal("readcover: buffer too small");
+	seprint(buf, end, "%s", s->path);
+
+	fd = open(buf, OREAD);
+	if(fd < 0)
+		sysfatal("readcover: %r");
+	n = dirreadall(fd, &files);
+	close(fd);
+	if(n <= 0)
+		sysfatal("readcover: no files in dir");
+
+	for(i=0;i<n;i++){
+		dot = cistrstr(files[i].name, "cover.");
+		if(dot == nil){
+			dot = cistrstr(files[i].name, "folder.");
+			if(dot == nil)
+				continue;
+		}
+		dot = strrchr(dot, '.');
+		dot++;
+		snprint(cover, 512, "%s/%s", buf, files[i].name);
+		fd = open(cover, OREAD);
+		if(fd<0)
+			continue;
+		im = convpic(fd, dot);
+		close(fd);
+		return im;
+	}
+	return nil;
+}
+
 Point
 drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong)
 {
@@ -140,6 +191,9 @@ drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong)
 	Font *f = screen->display->defaultfont;
 	Rune *tracktitle = nil;
 	Point p = start;
+
+	if(a->cover == nil)
+		a->cover = readcover(a->songs[0]);
 
 	if(a->cover != nil){
 		draw(screen, Rpt(p, addpt(p, a->cover->r.max)), a->cover, nil, ZP);
@@ -182,7 +236,6 @@ drawlibrary(Album *start, Album *stop, Album *cur, Image *textcolor, Image *acti
 
 	for(;start!=stop;start++)
 		p = drawalbum(start, textcolor, active, p, start == cur ? cursong : -1);
-	flushimage(display, Refnone);
 }
 
 void
@@ -195,6 +248,5 @@ drawvolume(int level, Image* color)
 	p.y = screen->r.min.y;
 	p.x = screen->r.max.x;
 	p.x-=(n*f->width);
-	string(screen, p, color, ZP, f, buf);
-	flushimage(display, Refnone);
+	string(screen, p, color, ZP, f, buf);;
 }
