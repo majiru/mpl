@@ -6,6 +6,13 @@ enum cmsg{
 	PAUSE,
 };
 
+enum volmsg{
+	UP,
+	DOWN,
+	MUTE,
+	UNMUTE,
+};
+
 /*
  * ID3v1 represents the first version of ID3 metainformation.
  * The spec does not define character set, so we treat it as

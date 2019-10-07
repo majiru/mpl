@@ -12,6 +12,7 @@ OFILES=\
 	dir.$O \
 	dat.$O \
 	lib.$O \
+	vol.$O \
 
 
 </sys/src/cmd/mkone

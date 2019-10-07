@@ -40,3 +40,6 @@ void*	mapget(Hmap*,char*);
 
 /* lib.c */
 void	spawnlib(Channel*,Channel*,char*);
+
+/* vol.c */
+void	spawnvol(Channel*,Channel*);
