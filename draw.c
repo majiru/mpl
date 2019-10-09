@@ -185,12 +185,13 @@ readcover(Song *s)
 }
 
 Point
-drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong)
+drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong, Channel *clickout)
 {
 	uint i;
 	Font *f = screen->display->defaultfont;
 	Rune *tracktitle = nil;
 	Point p = start;
+	Click c;
 
 	if(a->cover == nil)
 		a->cover = readcover(a->songs[0]);
@@ -216,6 +217,10 @@ drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong)
 			break;
 		}
 		runestring(screen, p, i == cursong ? active : textcolor, ZP, f, tracktitle);
+		c.r = Rpt(p, Pt(p.x+runestrlen(tracktitle)*f->width,p.y+f->height));
+		c.a = a;
+		c.songnum = i;
+		send(clickout, &c);
 		p.y += f->height;
 	}
 	if(p.y > start.y+256)
@@ -226,7 +231,7 @@ drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong)
 }
 
 void
-drawlibrary(Album *start, Album *stop, Album *cur, Image *textcolor, Image *active, int cursong)
+drawlibrary(Album *start, Album *stop, Album *cur, Image *textcolor, Image *active, int cursong, Channel *clickout)
 {
 	Point p = screen->r.min;
 	int height = screen->r.max.y - screen->r.min.y;
@@ -235,7 +240,7 @@ drawlibrary(Album *start, Album *stop, Album *cur, Image *textcolor, Image *acti
 	stop+=1;
 
 	for(;start!=stop;start++)
-		p = drawalbum(start, textcolor, active, p, start == cur ? cursong : -1);
+		p = drawalbum(start, textcolor, active, p, start == cur ? cursong : -1, clickout);
 }
 
 void

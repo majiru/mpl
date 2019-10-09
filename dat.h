@@ -92,6 +92,13 @@ struct Lib{
 	Album *start, *stop, *cur;
 };
 
+typedef struct Click Click;
+struct Click{
+	Rectangle r;
+	Album *a;
+	int songnum;
+};
+
 /*
  * Simple hashmap implementation.
  * Hnode key must be non nil.

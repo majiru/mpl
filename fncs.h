@@ -23,10 +23,10 @@ VorbisMeta*	parsevorbismeta(int, uvlong);
 FlacMeta*	readflacmeta(int, int);
 
 /* draw.c */
-Point	drawalbum(Album*, Image*, Image*, Point, int);
+Point	drawalbum(Album*, Image*, Image*, Point, int, Channel*);
 Image*	convpic(int, char*);
 Image*	convpicbuf(uchar*, uvlong, char*);
-void	drawlibrary(Album*, Album*, Album*, Image*, Image*, int);
+void	drawlibrary(Album*, Album*, Album*, Image*, Image*, int, Channel*);
 void	drawvolume(int, Image*);
 
 /* dir.c */
@@ -39,7 +39,10 @@ int		mapdel(Hmap*,char*);
 void*	mapget(Hmap*,char*);
 
 /* lib.c */
-void	spawnlib(Channel*,Channel*,char*);
+void	spawnlib(Channel*,Channel*,Channel*,Channel*,char*);
 
 /* vol.c */
 void	spawnvol(Channel*,Channel*);
+
+/* event.c */
+void	spawnevent(Channel*,Channel*,Channel*,Channel*);

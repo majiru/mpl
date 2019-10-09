@@ -13,6 +13,7 @@ OFILES=\
 	dat.$O \
 	lib.$O \
 	vol.$O \
+	event.$O \
 
 
 </sys/src/cmd/mkone

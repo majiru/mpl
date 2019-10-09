@@ -10,7 +10,6 @@
 #include "fncs.h"
 
 enum {
-	MOUSEC,
 	RESIZEC,
 	KEYC,
 	NONE
@@ -20,6 +19,7 @@ Mousectl 	*mctl;
 Keyboardctl *kctl;
 Channel		*ctl, *lout;
 Channel		*vctl, *vlevel;
+Channel		*clickin, *clickreset;
 int			decpid;
 
 Image *black;
@@ -53,9 +53,10 @@ eresized(int isnew)
 	if(isnew && getwindow(display, Refnone) < 0)
 		quit("eresized: Can't reattach to window");
 
+	send(clickreset, nil);
 	draw(screen, screen->r, background, nil, ZP);
 	recv(lout, &lib);
-	drawlibrary(lib.cur, lib.stop, lib.cur, black, red, lib.cursong);
+	drawlibrary(lib.cur, lib.stop, lib.cur, black, red, lib.cursong, clickin);
 	recv(vlevel, &level);
 	drawvolume(level, black);
 	flushimage(display, Refnone);
@@ -113,8 +114,8 @@ usage(void)
 void
 threadmain(int argc, char *argv[])
 {
-	Mouse mouse;
 	Rune kbd;
+	Channel *clickout;
 	int resize[2];
 	ctl = vctl = vlevel = nil;
 
@@ -132,9 +133,14 @@ threadmain(int argc, char *argv[])
 	if((kctl = initkeyboard(nil)) == nil)
 		sysfatal("initkeyboard: %r");
 
+	clickin = chancreate(sizeof(Click), 0);
+	clickout = chancreate(sizeof(Click), 0);
+	clickreset = chancreate(1, 0);
+	spawnevent(mctl->c, clickin, clickout, clickreset);
+
 	ctl = chancreate(sizeof(enum cmsg), 0);
 	lout = chancreate(sizeof(Lib), 0);
-	spawnlib(ctl, lout, argv[1]);
+	spawnlib(ctl, lout, clickout, mctl->resizec, argv[1]);
 
 	vctl = chancreate(sizeof(enum volmsg), 0);
 	vlevel = chancreate(sizeof(int), 0);
@@ -147,7 +153,6 @@ threadmain(int argc, char *argv[])
 	eresized(0);
 
 	Alt alts[] = {
-		{mctl->c, &mouse, CHANRCV},
 		{mctl->resizec, resize, CHANRCV},
 		{kctl->c, &kbd, CHANRCV},
 		{nil, nil, CHANEND},

@@ -11,7 +11,9 @@ Lib lib;
 
 enum{
 	LMSG,
-	QUEUE,
+	QUEUEPOP,
+	EIN,
+	OUT,
 };
 
 char*
@@ -58,34 +60,47 @@ libproc(void *arg)
 	Channel **chans = arg;
 	Channel *lctl = chans[0];
 	Channel *out = chans[1];
+	Channel *ein = chans[2];
+	Channel *resize = chans[3];
 	free(chans);
 
 	enum cmsg msg;
+	Click c;
 
 	Alt alts[] = {
 		{lctl, &msg, CHANRCV},
 		{queueout, nil, CHANRCV},
+		{ein, &c, CHANRCV},
 		{out, &lib, CHANSND},
 		{nil, nil, CHANEND},
 	};
-	for(;;)
+	for(;;){
 		switch(alt(alts)){
 		case LMSG:
 			handlemsg(msg);
 			break;
-		case QUEUE:
+		case QUEUEPOP:
 			handlemsg(NEXT);
 			break;
+		case EIN:
+			lib.cur = c.a;
+			lib.cursong = c.songnum;
+			sendp(queuein, nextsong(&lib));
+			break;
+		case OUT:
+			continue;
 		}
+		send(resize, nil);
+	}
 }
 
 void
-spawnlib(Channel *ctl, Channel *out, char *path)
+spawnlib(Channel *ctl, Channel *out, Channel *ein, Channel *resize, char *path)
 {
 	Channel **chans;
 
 	queuein = queueout = decctl = nil;
-	spawndec(&queuein, &queueout, &decctl);
+	spawndec(&queuein, &decctl, &queueout);
 
 	lib.cursong = 0;
 	lib.nalbum = parselibrary(&(lib.start), path);
@@ -94,9 +109,11 @@ spawnlib(Channel *ctl, Channel *out, char *path)
 	lib.cur = lib.start;
 	lib.stop = lib.start+(lib.nalbum-1);
 
-	chans = emalloc(sizeof(Channel*)*2);
+	chans = emalloc(sizeof(Channel*)*4);
 	chans[0] = ctl;
 	chans[1] = out;
+	chans[2] = ein;
+	chans[3] = resize;
 
 	sendp(queuein, nextsong(&lib));
 	threadcreate(libproc, chans, 8192);
