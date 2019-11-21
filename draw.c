@@ -27,6 +27,7 @@ picwriteproc(void *arg)
 		i+=n;
 		towrite-=n;
 	}
+	close(fd);
 }
 
 typedef struct{
@@ -143,6 +144,7 @@ readcover(Song *s)
 	Dir *files;
 	Image *im;
 
+
 	if(s->type == FLAC && s->fmeta->pic != nil){
 		p = s->fmeta->pic;
 		return convpicbuf(p->data, p->size, p->mime);
@@ -193,8 +195,9 @@ drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong, C
 	Point p = start;
 	Click c;
 
-	if(a->cover == nil)
-		a->cover = readcover(a->songs[0]);
+	if(a->nocover == 0 && a->cover == nil)
+		if((a->cover = readcover(a->songs)) == nil)
+			a->nocover = 1; /* Don't search again */
 
 	if(a->cover != nil){
 		draw(screen, Rpt(p, addpt(p, a->cover->r.max)), a->cover, nil, ZP);
@@ -205,16 +208,23 @@ drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong, C
 	p.y += f->height * 2;
 
 	for(i=0;i<a->nsong;i++){
-		switch(a->songs[i]->type){
+		switch((a->songs+i)->type){
 		case FLAC:
-			tracktitle = a->songs[i]->fmeta->com->title;
+			tracktitle = (a->songs+i)->fmeta->com->title;
 			break;
 		case MP3:
-			tracktitle = a->songs[i]->idmeta->title;
+			tracktitle = (a->songs+i)->idmeta->title;
 			break;
 		case VORBIS:
-			tracktitle = a->songs[i]->vmeta->title;
+			tracktitle = (a->songs+i)->vmeta->title;
 			break;
+		case RADIO:
+			tracktitle = (a->songs+i)->title;
+			if(tracktitle == nil)
+				return start;
+			break;
+		default:
+			sysfatal("Unknown song type");
 		}
 		runestring(screen, p, i == cursong ? active : textcolor, ZP, f, tracktitle);
 		c.r = Rpt(p, Pt(p.x+runestrlen(tracktitle)*f->width,p.y+f->height));
@@ -239,8 +249,12 @@ drawlibrary(Album *start, Album *stop, Album *cur, Image *textcolor, Image *acti
 	stop = screenstop < stop ? screenstop : stop;
 	stop+=1;
 
-	for(;start!=stop;start++)
+	if(start==stop)
+		stop++;
+
+	for(;start!=stop;start++){
 		p = drawalbum(start, textcolor, active, p, start == cur ? cursong : -1, clickout);
+	}
 }
 
 void
@@ -253,5 +267,5 @@ drawvolume(int level, Image* color)
 	p.y = screen->r.min.y;
 	p.x = screen->r.max.x;
 	p.x-=(n*f->width);
-	string(screen, p, color, ZP, f, buf);;
+	string(screen, p, color, ZP, f, buf);
 }

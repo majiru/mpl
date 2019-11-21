@@ -78,10 +78,12 @@ volthread(void *arg)
 		switch(vmsg){
 		case UP:
 			level+=5;
+			level = level > 100 ? 100 : level;
 			writevol(fd, muted == 0 ? level : 0);
 			break;
 		case DOWN:
 			level-=5;
+			level = level < 0 ? 0 : level;
 			writevol(fd, muted == 0 ? level : 0);
 			break;
 		case MUTE:

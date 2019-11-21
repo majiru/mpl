@@ -30,7 +30,11 @@ void	drawlibrary(Album*, Album*, Album*, Image*, Image*, int, Channel*);
 void	drawvolume(int, Image*);
 
 /* dir.c */
+int		file2song(Song*, char*,int);
+int		dir2album(Album*,char*);
 int		parselibrary(Album**,char*);
+void	radio2album(Album*,char*);
+void	file2album(Album*,Rune*,char*);
 
 /* dat.c */
 Hmap*	allocmap(int);
@@ -39,10 +43,24 @@ int		mapdel(Hmap*,char*);
 void*	mapget(Hmap*,char*);
 
 /* lib.c */
-void	spawnlib(Channel*,Channel*,Channel*,Channel*,char*);
+void	spawnlib(Channel*,Channel*,Channel*,Channel*,Channel*,char*);
 
 /* vol.c */
 void	spawnvol(Channel*,Channel*);
 
 /* event.c */
 void	spawnevent(Channel*,Channel*,Channel*,Channel*);
+
+/* index.c */
+void	marshalstr(int,char*);
+void	unmarshalstr(int,char**);
+void	marshalrune(int,Rune*);
+void	unmarshalrun(int,Rune**);
+void	marshalalbum(int,Album*);
+void	unmarshalalbum(int,Album*);
+void	marshallib(int,Lib*);
+void	unmarshallib(int,Lib*);
+
+/* list.c */
+void	dumplib(Lib*);
+void	loadlib(Lib*);

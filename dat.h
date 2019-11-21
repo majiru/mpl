@@ -4,6 +4,7 @@ enum cmsg{
 	STOP,
 	START,
 	PAUSE,
+	DUMP,
 };
 
 enum volmsg{
@@ -24,7 +25,7 @@ struct ID3v1{
 	Rune 	*title;
 	Rune 	*artist;
 	Rune 	*album;
-	int		year;
+	int	year;
 	Rune	*comment;
 	char	genre;
 };
@@ -46,11 +47,11 @@ struct VorbisMeta{
 
 typedef struct FlacPic FlacPic;
 struct FlacPic{
-		char *mime;
-		Rune *desc;
-		Point p;
-		uvlong size;
-		uchar *data;
+	char *mime;
+	Rune *desc;
+	Point p;
+	uvlong size;
+	uchar *data;
 };
 
 typedef struct FlacMeta FlacMeta;
@@ -64,6 +65,7 @@ enum metatype{
 	FLAC,
 	MP3,
 	VORBIS,
+	RADIO,
 };
 
 typedef struct Song Song;
@@ -73,23 +75,26 @@ struct Song{
 		FlacMeta *fmeta;
 		VorbisMeta *vmeta;
 		ID3v1 *idmeta;
+		Rune *title;
 	};
 	char *path;
 };
 
 typedef struct Album Album;
 struct Album{
-	char *path;
 	Rune *name;
 	Image *cover;
 	int nsong;
-	Song **songs;
+	Song *songs;
+
+	int nocover;
 };
 
 typedef struct Lib Lib;
 struct Lib{
 	int nalbum, cursong;
 	Album *start, *stop, *cur;
+	char *name;
 };
 
 typedef struct Click Click;

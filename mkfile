@@ -14,6 +14,8 @@ OFILES=\
 	lib.$O \
 	vol.$O \
 	event.$O \
+	index.$O \
+	list.$O \
 
 
 </sys/src/cmd/mkone

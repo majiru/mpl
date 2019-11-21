@@ -6,19 +6,19 @@
 #include "dat.h"
 #include "fncs.h"
 
-Song*
-file2song(char *path, int needpic)
+int
+file2song(Song *s, char *path, int needpic)
 {
 	char *dot;
-	Song *s;
 	int fd;
 
+	s->path = strdup(path);
+
 	dot = strrchr(path, '.');
-	if(dot == nil)
-		return nil;
+	if(dot == nil || *dot == '\0')
+		return 0;
 	dot+=1;
 
-	s = emalloc(sizeof(Song));
 	if(strcmp(dot, "flac") == 0){
 		s->type = FLAC;
 		goto done;
@@ -32,12 +32,12 @@ file2song(char *path, int needpic)
 		goto done;
 	}
 	/* Unsupported file suffix */
-	goto error;
+	return 0;
 
 done:
 	fd = open(path, OREAD);
 	if(fd < 0)
-		goto error;
+		return 0;
 
 	switch(s->type){
 	case FLAC:
@@ -53,20 +53,16 @@ done:
 	close(fd);
 	/* We can check the pointer without having to worry about which one it is */
 	if(s->fmeta == nil)
-		goto error;
+		return 0;
 
-	return s;
-
-error:
-	free(s);
-	return nil;
+	return 1;
 }
 
 int
 songcmp(void *a, void *b)
 {
-	Song *s1 = *((Song**)a);
-	Song *s2 = *((Song**)b);
+	Song *s1 = a;
+	Song *s2 = b;
 	int t1, t2;
 	t1 = t2 = 0;
 
@@ -128,23 +124,22 @@ dir2album(Album *a, char *path)
 
 	/* Greedy alloc to start, we will trim down later */
 	a->nsong = n;
-	a->songs = emalloc(sizeof(Song*) * n);
+	a->songs = emalloc(sizeof(Song) * n);
 
 	for(i=0;i<n;i++){
 		snprint(buf, 512, "%s/%s", path, files[i].name);
-		a->songs[songcount] = file2song(buf, needpic++);
-		if(a->songs[songcount] == nil)
+		if(!file2song(a->songs+songcount, buf, 0))
 			continue;
 		if(a->name == nil){
-			switch(a->songs[songcount]->type){
+			switch((a->songs+songcount)->type){
 			case FLAC:
-				albumtitle = a->songs[songcount]->fmeta->com->album;
+				albumtitle = (a->songs+songcount)->fmeta->com->album;
 				break;
 			case MP3:
-				albumtitle = a->songs[songcount]->idmeta->album;
+				albumtitle = (a->songs+songcount)->idmeta->album;
 				break;
 			case VORBIS:
-				albumtitle = a->songs[songcount]->vmeta->album;
+				albumtitle = (a->songs+songcount)->vmeta->album;
 				break;
 			default:
 				albumtitle = nil;
@@ -152,14 +147,13 @@ dir2album(Album *a, char *path)
 			if(albumtitle != nil)
 				a->name = runesmprint("%S",  albumtitle);
 		}
-		a->songs[songcount]->path = strdup(buf);
 		songcount++;
 	}
 
 	a->nsong = songcount;
-	a->songs = realloc(a->songs, sizeof(Song*) * songcount);
+	a->songs = realloc(a->songs, sizeof(Song) * songcount);
 
-	qsort(a->songs, songcount, sizeof(Song*), songcmp);
+	qsort(a->songs, songcount, sizeof(Song), songcmp);
 
 	free(files);
 	return 1;
@@ -200,4 +194,36 @@ parselibrary(Album **als, char *path)
 	*als = realloc(*als, sizeof(Album)*alcount);
 
 	return alcount;
+}
+
+void
+file2album(Album *a, Rune *aname, char *path)
+{
+	a->name = runestrdup(aname);
+	a->cover = nil;
+	a->nsong = 1;
+	a->songs = emalloc(sizeof(Song));
+	/* As a special case for http streams */
+	if(strstr(path, "http")==path){
+		a->name = runesmprint("%s", path);
+		a->nocover = 1;
+		a->songs->path = strdup(path);
+		a->songs->title = runestrdup(aname);
+		a->songs->type = RADIO;
+		return;
+	}
+	if(!file2song(a->songs, path, 0))
+		sysfatal("Could not parse song %s", path);
+}
+
+void
+radio2album(Album *a, char *path)
+{
+	a->name = runesmprint("Radio");
+	a->cover = nil;
+	a->nsong = 1;
+	a->songs = emalloc(sizeof(Song));
+	a->songs->type = RADIO;
+	a->songs->title = nil;
+	a->songs->path = strdup(path);
 }

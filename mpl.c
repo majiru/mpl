@@ -12,15 +12,18 @@
 enum {
 	RESIZEC,
 	KEYC,
+	REDRAW,
 	NONE
 };
 
 Mousectl 	*mctl;
 Keyboardctl *kctl;
-Channel		*ctl, *lout;
+Channel		*ctl, *lout, *loadc;
 Channel		*vctl, *vlevel;
 Channel		*clickin, *clickreset;
-int			decpid;
+int		decpid;
+
+int mflag, sflag, pflag, rflag, fflag;
 
 Image *black;
 Image *red;
@@ -39,9 +42,7 @@ cleanup(void*,char*)
 void
 quit(char *err)
 {
-	closedisplay(display);
-	closemouse(mctl);
-	closekeyboard(kctl);
+	cleanup(nil, nil);
 	threadexitsall(err);
 }
 
@@ -67,6 +68,7 @@ handleaction(Rune kbd)
 {
 	enum volmsg vmsg;
 	enum cmsg msg;
+	char buf[512] = {0};
 	switch(kbd){
 		case Kbs:
 		case Kdel:
@@ -99,15 +101,22 @@ handleaction(Rune kbd)
 			vmsg = UP;
 			send(vctl, &vmsg);
 			break;
+		case 'd':
+			msg = DUMP;
+			send(ctl, &msg);
+			break;
+		case 'o':
+			enter("Playlist?", buf, sizeof buf, mctl, kctl, nil);
+			sendp(loadc, buf);
+			break;
 	}
 	eresized(0);
 }
 
-
 void
 usage(void)
 {
-	fprint(2, "Usage: %s file", argv0);
+	fprint(2, "Usage: -mspr %s file", argv0);
 	sysfatal("usage");
 }
 
@@ -118,12 +127,33 @@ threadmain(int argc, char *argv[])
 	Channel *clickout;
 	int resize[2];
 	ctl = vctl = vlevel = nil;
+	mflag = sflag = pflag = rflag = fflag = 0;
 
-	//TODO: Use ARGBEGIN
-	argv0 = argv[0];
+	/*
+	 * This shouldn't need to be buffered,
+	 * but for some reason it likes to still be
+	 * blocked by the time the libproc is asked
+	 * to produce the Lib struct. TODO: Investigate.
+	 */
+	Channel *redraw = chancreate(1, 1);
+
+	ARGBEGIN{
+	case 'm': mflag++; break;
+	case 's': sflag++; break;
+	case 'p': pflag++; break;
+	case 'r': rflag++; break;
+	case 'f': fflag++; break;
+	default: usage();
+	}ARGEND
+
+	if(mflag+sflag+pflag+rflag+fflag < 1){
+		fprint(2, "Please specify a playlist flag(m, s, r, or p)\n");
+		threadexits(nil);
+	}
+
 	threadnotify(cleanup, 1);
 
-	if(argc != 2)
+	if(argc != 1)
 		usage();
 
 	if(initdraw(nil, nil, "mpl") < 0)
@@ -140,7 +170,8 @@ threadmain(int argc, char *argv[])
 
 	ctl = chancreate(sizeof(enum cmsg), 0);
 	lout = chancreate(sizeof(Lib), 0);
-	spawnlib(ctl, lout, clickout, mctl->resizec, argv[1]);
+	loadc = chancreate(sizeof(char*), 0);
+	spawnlib(ctl, lout, clickout, redraw, loadc, argv[0]);
 
 	vctl = chancreate(sizeof(enum volmsg), 0);
 	vlevel = chancreate(sizeof(int), 0);
@@ -155,6 +186,7 @@ threadmain(int argc, char *argv[])
 	Alt alts[] = {
 		{mctl->resizec, resize, CHANRCV},
 		{kctl->c, &kbd, CHANRCV},
+		{redraw, nil, CHANRCV},
 		{nil, nil, CHANEND},
 	};
 
@@ -165,6 +197,9 @@ threadmain(int argc, char *argv[])
 				break;
 			case RESIZEC:
 				eresized(1);
+				break;
+			case REDRAW:
+				eresized(0);
 				break;
 		}
 	}
