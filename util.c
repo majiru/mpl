@@ -13,6 +13,7 @@ emalloc(vlong size)
 	void *v = malloc(size);
 	if(v == nil)
 		quit("Out of memory");
+	setmalloctag(v, getcallerpc(&size));
 	v = memset(v, 0, size);
 	return v;
 }
