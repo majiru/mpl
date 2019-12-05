@@ -21,7 +21,8 @@ Keyboardctl *kctl;
 Channel		*ctl, *lout, *loadc;
 Channel		*vctl, *vlevel;
 Channel		*clickin, *clickreset;
-int		decpid;
+int			decpid;
+int 		showlists;
 
 int mflag, sflag, pflag, rflag, fflag;
 
@@ -51,13 +52,19 @@ eresized(int isnew)
 {
 	int level;
 	Lib lib;
+	Point p;
 	if(isnew && getwindow(display, Refnone) < 0)
 		quit("eresized: Can't reattach to window");
 
+	p = screen->r.min;
 	send(clickreset, nil);
 	draw(screen, screen->r, background, nil, ZP);
 	recv(lout, &lib);
-	drawlibrary(lib.cur, lib.stop, lib.cur, black, red, lib.cursong, clickin);
+	if(showlists) {
+		drawlists(p, black, red, background, clickin);
+		p.x+=256;
+	}
+	drawlibrary(&lib, p, black, red, clickin);
 	recv(vlevel, &level);
 	drawvolume(level, black);
 	flushimage(display, Refnone);
@@ -128,6 +135,7 @@ threadmain(int argc, char *argv[])
 	int resize[2];
 	ctl = vctl = vlevel = nil;
 	mflag = sflag = pflag = rflag = fflag = 0;
+	showlists = 0;
 
 	/*
 	 * This shouldn't need to be buffered,
@@ -147,7 +155,7 @@ threadmain(int argc, char *argv[])
 	}ARGEND
 
 	if(mflag+sflag+pflag+rflag+fflag < 1){
-		fprint(2, "Please specify a playlist flag(m, s, r, or p)\n");
+		fprint(2, "Please specify a playlist flag(m, s, r, f, or p)\n");
 		threadexits(nil);
 	}
 

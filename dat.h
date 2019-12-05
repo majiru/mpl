@@ -97,11 +97,22 @@ struct Lib{
 	char *name;
 };
 
+enum {
+	CSONG,
+	CLIST,
+};
+
 typedef struct Click Click;
 struct Click{
 	Rectangle r;
+	int type; /* Either CSONG or CLIST */
+
+	/* For song events */
 	Album *a;
 	int songnum;
+
+	/* For list events */
+	char *list;
 };
 
 /*

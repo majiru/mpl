@@ -230,6 +230,7 @@ drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong, C
 		c.r = Rpt(p, Pt(p.x+runestrlen(tracktitle)*f->width,p.y+f->height));
 		c.a = a;
 		c.songnum = i;
+		c.type = CSONG;
 		send(clickout, &c);
 		p.y += f->height;
 	}
@@ -241,11 +242,17 @@ drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong, C
 }
 
 void
-drawlibrary(Album *start, Album *stop, Album *cur, Image *textcolor, Image *active, int cursong, Channel *clickout)
+drawlibrary(Lib *l, Point p, Image *textcolor, Image *active, Channel *clickout)
 {
-	Point p = screen->r.min;
-	int height = screen->r.max.y - screen->r.min.y;
-	Album *screenstop = start+(height/256)-1;
+	Album *start, *stop, *cur, *screenstop;
+	int cursong, height;
+
+	start = l->cur;
+	stop = l->stop;
+	cur = l->cur;
+	cursong = l->cursong;
+	height = screen->r.max.y - screen->r.min.y;
+	screenstop = start+(height/256)-1;
 	stop = screenstop < stop ? screenstop : stop;
 	stop+=1;
 
@@ -255,6 +262,58 @@ drawlibrary(Album *start, Album *stop, Album *cur, Image *textcolor, Image *acti
 	for(;start!=stop;start++){
 		p = drawalbum(start, textcolor, active, p, start == cur ? cursong : -1, clickout);
 	}
+}
+
+void
+drawlists(Point p, Image *textcolor, Image *active, Image *background, Channel *clickout)
+{
+	Rectangle r;
+	int n, i;
+	int fd;
+	Dir *files;
+	char buf[512];
+	Font *f = screen->display->defaultfont;
+	Hmap *h;
+	char **keys, *dot;
+	Click c;
+
+	libdir(buf, sizeof buf);
+	fd = open(buf, OREAD);
+	if(fd < 0)
+		sysfatal("could not open libdir");
+
+	n = dirreadall(fd, &files);
+	close(fd);
+	if(n <= 0){
+		free(files);
+		return;
+	}
+
+	h = allocmap(32);
+	r.min = p;
+	r.max.x = r.min.x + 256;
+	r.max.y = screen->r.max.y;
+	draw(screen, r, background, nil, ZP);
+	for(i=0;i<n;i++){
+		if((dot = strrchr(files[i].name, '.')) != nil)
+			*dot = '\0';
+		//vals can not be nil so we use a dummy
+		mapinsert(h, files[i].name, &r);
+	}
+	keys = emalloc(sizeof(char*)*n);
+	n = mapdumpkey(h, keys, n);
+	for(i=0;i<n;i++){
+		string(screen, p, textcolor, ZP, f, keys[i]);
+		c.r = Rpt(p, Pt(p.x+strlen(keys[i])*f->width,p.y+f->height));
+		c.list = strdup(keys[i]);
+		c.type = CLIST;
+		send(clickout, &c);
+		p.y += f->height;
+	}
+
+	freemap(h);
+	free(keys);
+	free(files);
 }
 
 void

@@ -96,9 +96,18 @@ libproc(void *arg)
 			handlemsg(NEXT);
 			break;
 		case EIN:
-			lib.cur = c.a;
-			lib.cursong = c.songnum;
-			sendp(queuein, nextsong(&lib));
+			switch(c.type){
+			case CSONG:
+				lib.cur = c.a;
+				lib.cursong = c.songnum;
+				sendp(queuein, nextsong(&lib));
+				break;
+			case CLIST:
+				//TODO clean more
+				free(lib.name);
+				lib.name = c.list;
+				goto Load;
+			}
 			break;
 		case OUT:
 			continue;
@@ -116,8 +125,10 @@ libproc(void *arg)
 			free(radiotitle);
 			break;
 		case LOADC:
+			//TODO: clean more
 			free(lib.name);
 			lib.name = strdup(toload);
+Load:
 			loadlib(&lib);
 			lib.stop = lib.start+(lib.nalbum-1);
 			lib.cursong = 0;
