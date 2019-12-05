@@ -95,7 +95,7 @@ mapdel(Hmap *h, char *key)
 	return 0;
 }
 
-void
+int
 mapdump(Hmap *h, void **buf, int size)
 {
 	Hnode *n;
@@ -103,23 +103,52 @@ mapdump(Hmap *h, void **buf, int size)
 
 	rlock(h);
 	for(i=c=0;i<h->size;i++)
-		for(n=h->nodes+i;n!=nil && n->key!=nil;n=n->next)
+		for(n=h->nodes+i;n!=nil && n->key!=nil;n=n->next){
+			if(c >= size)
+				return c;
 			buf[c++] = n->val;
+		}
 	runlock(h);
+	return c;
+}
+
+int
+mapdumpkey(Hmap *h, char **buf, int size)
+{
+	Hnode *n;
+	int i, c;
+
+	rlock(h);
+	for(i=c=0;i<h->size;i++)
+		for(n=h->nodes+i;n!=nil && n->key!=nil;n=n->next){
+			if(c >= size)
+				return c;
+			buf[c++] = n->key;
+		}
+	runlock(h);
+	return c;
 }
 
 void
 mapclear(Hmap *h)
 {
 	Hnode *n;
-	int i, c;
+	int i;
 
 	wlock(h);
-	for(i=c=0;i<h->size;i++)
+	for(i=0;i<h->size;i++)
 		for(n=h->nodes+i;n!=nil;n=n->next)
 			if(n->key != nil){
 				free(n->key);
 				n->key=nil;
 			}
 	wunlock(h);
+}
+
+void
+freemap(Hmap *h)
+{
+	mapclear(h);
+	free(h->nodes);
+	free(h);
 }
