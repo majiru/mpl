@@ -27,17 +27,20 @@ marshalrune(int fd, Rune *r)
 	}
 }
 
-void
-unmarshalrune(int fd, Rune **r)
+Rune*
+unmarshalrune(int fd)
 {
-	static uchar buf[128];
+	static char buf[128];
+	Rune *r;
 	uchar n;
 	read(fd, &n, sizeof n);
 	if(n == 0)
-		return;
+		return nil;
 	read(fd, buf, n);
 	buf[n] = '\0';
-	*r = runesmprint("%s", (char*)buf);
+	r = runesmprint("%s", buf);
+	setmalloctag(r, getcallerpc(&fd));
+	return r;
 }
 
 void
@@ -48,14 +51,17 @@ marshalstr(int fd, char *s)
 	write(fd, s, n);
 }
 
-void
-unmarshalstr(int fd, char **s)
+char*
+unmarshalstr(int fd)
 {
 	uint n;
+	char *s;
 	read(fd, &n, sizeof n);
-	*s = emalloc(n+1);
+	s = emalloc(n+1);
+	setmalloctag(s, getcallerpc(&fd));
 	s[n] = '\0';
-	read(fd, *s, n);
+	read(fd, s, n);
+	return s;
 }
 
 void
@@ -73,9 +79,10 @@ void
 unmarshalvorbis(int fd, VorbisMeta **v)
 {
 	*v = emalloc(sizeof(VorbisMeta));
-	unmarshalrune(fd, &((*v)->title));
-	unmarshalrune(fd, &((*v)->artist));
-	unmarshalrune(fd, &((*v)->album));
+	setmalloctag(*v, getcallerpc(&fd));
+	(*v)->title = unmarshalrune(fd);
+	(*v)->artist = unmarshalrune(fd);
+	(*v)->album = unmarshalrune(fd);
 	read(fd, &((*v)->year), sizeof (*v)->year);
 	read(fd, &((*v)->tracknumber), sizeof (*v)->tracknumber);
 }
@@ -93,7 +100,7 @@ void
 unmarshalflacpic(int fd, FlacPic **p)
 {
 	*p = emalloc(sizeof(FlacPic));
-	unmarshalstr(fd, &((*p)->mime));
+	(*p)->mime = unmarshalstr(fd);
 	read(fd, &((*p)->size), sizeof (*p)->size);
 	read(fd, (*p)->data, (*p)->size);
 }
@@ -128,11 +135,11 @@ void
 unmarshalid3(int fd, ID3v1 **id)
 {
 	*id = emalloc(sizeof(ID3v1));
-	unmarshalrune(fd, &((*id)->title));
-	unmarshalrune(fd, &((*id)->artist));
-	unmarshalrune(fd, &((*id)->album));
+	(*id)->title = unmarshalrune(fd);
+	(*id)->artist = unmarshalrune(fd);
+	(*id)->album = unmarshalrune(fd);
 	read(fd, &((*id)->year), sizeof (*id)->year);
-	unmarshalrune(fd, &((*id)->comment));
+	(*id)->comment	= unmarshalrune(fd);
 	read(fd, &((*id)->genre), sizeof (*id)->genre);
 }
 
@@ -167,7 +174,7 @@ unmarshalsong(int fd, Song *s)
 	default:
 		sysfatal("not recognized or unsupported format");
 	}
-	unmarshalstr(fd, &(s->path));
+	s->path = unmarshalstr(fd);
 }
 
 void
@@ -188,12 +195,13 @@ void
 unmarshalalbum(int fd, Album *a)
 {
 	int i, havepic;
-	unmarshalrune(fd, &(a->name));
+	a->name = unmarshalrune(fd);
 	read(fd, &(a->nsong), sizeof a->nsong);
 	read(fd, &havepic, sizeof havepic);
 	if(havepic)
 		a->cover = readimage(display, fd, 0);
 	a->songs = emalloc(sizeof(Song)*a->nsong);
+	setmalloctag(a->songs, getcallerpc(&fd));
 	for(i=0;i<a->nsong;i++)
 		unmarshalsong(fd, a->songs+i);
 }
@@ -214,6 +222,7 @@ unmarshallib(int fd, Lib *l)
 	l->cursong = 0;
 	read(fd, &(l->nalbum), sizeof l->nalbum);
 	l->start = emalloc(sizeof(Album)*l->nalbum);
+	setmalloctag(l->start, getcallerpc(&fd));
 	for(i=0;i<l->nalbum;i++)
 		unmarshalalbum(fd, l->start+i);
 	l->stop = l->start+i;

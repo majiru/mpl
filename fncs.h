@@ -26,8 +26,9 @@ FlacMeta*	readflacmeta(int, int);
 Point	drawalbum(Album*, Image*, Image*, Point, int, Channel*);
 Image*	convpic(int, char*);
 Image*	convpicbuf(uchar*, uvlong, char*);
-void	drawlibrary(Album*, Album*, Album*, Image*, Image*, int, Channel*);
+void	drawlibrary(Lib*, Point, Image*, Image*, Channel*);
 void	drawvolume(int, Image*);
+void	drawlists(Point,Image*,Image*,Image*,Channel*);
 
 /* dir.c */
 int		file2song(Song*, char*,int);
@@ -41,6 +42,9 @@ Hmap*	allocmap(int);
 void	mapinsert(Hmap*,char*,void*);
 int		mapdel(Hmap*,char*);
 void*	mapget(Hmap*,char*);
+void	freemap(Hmap*);
+int		mapdump(Hmap*,void**,int);
+int		mapdumpkey(Hmap*,char**,int);
 
 /* lib.c */
 void	spawnlib(Channel*,Channel*,Channel*,Channel*,Channel*,char*);
@@ -53,14 +57,15 @@ void	spawnevent(Channel*,Channel*,Channel*,Channel*);
 
 /* index.c */
 void	marshalstr(int,char*);
-void	unmarshalstr(int,char**);
+char*	unmarshalstr(int);
 void	marshalrune(int,Rune*);
-void	unmarshalrun(int,Rune**);
+Rune*	unmarshalrune(int);
 void	marshalalbum(int,Album*);
 void	unmarshalalbum(int,Album*);
 void	marshallib(int,Lib*);
 void	unmarshallib(int,Lib*);
 
 /* list.c */
+void	libdir(char*,int);
 void	dumplib(Lib*);
 void	loadlib(Lib*);
