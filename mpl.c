@@ -29,6 +29,7 @@ int mflag, sflag, pflag, rflag, fflag;
 Image *black;
 Image *red;
 Image *background;
+Image *listbackground;
 
 int
 cleanup(void*,char*)
@@ -61,7 +62,7 @@ eresized(int isnew)
 	draw(screen, screen->r, background, nil, ZP);
 	recv(lout, &lib);
 	if(showlists) {
-		drawlists(p, black, red, background, clickin);
+		drawlists(p, black, red, listbackground, clickin);
 		p.x+=256;
 	}
 	drawlibrary(&lib, p, black, red, clickin);
@@ -83,6 +84,9 @@ handleaction(Rune kbd)
 			quit(nil);
 			return;
 		case 'w':
+			break;
+		case 's':
+			showlists = !showlists;
 			break;
 		case 'p':
 			msg = PAUSE;
@@ -111,6 +115,9 @@ handleaction(Rune kbd)
 		case 'd':
 			msg = DUMP;
 			send(ctl, &msg);
+			/* lib proc is waiting for us to give it a name */
+			enter("name?", buf, sizeof buf, mctl, kctl, nil);
+			sendp(loadc, buf);
 			break;
 		case 'o':
 			enter("Playlist?", buf, sizeof buf, mctl, kctl, nil);
@@ -187,7 +194,8 @@ threadmain(int argc, char *argv[])
 
 	red = allocimage(display, Rect(0, 0, 1, 1), screen->chan, 1, DBlue);
 	black = allocimage(display, Rect(0, 0, 1, 1), screen->chan, 1, DBlack);
-	background = allocimagemix(display, DPaleyellow, DPalegreen);
+	listbackground = allocimagemix(display, DPalebluegreen, DPalegreen);
+	background = allocimagemix(display, DYellow, DPalegreyblue);
 
 	eresized(0);
 
