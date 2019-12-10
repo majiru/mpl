@@ -33,9 +33,6 @@ void
 handlemsg(enum cmsg msg)
 {
 	switch(msg){
-	case DUMP:
-		dumplib(&lib);
-		break;
 	case NEXT:
 		lib.cursong++;
 		sendp(queuein, nextsong(&lib));
@@ -90,6 +87,13 @@ libproc(void *arg)
 	for(;;){
 		switch(alt(alts)){
 		case LMSG:
+			if(msg == DUMP){
+				/* TODO: rename chan to imply this use */
+				toload = recvp(loadc);
+				free(lib.name);
+				lib.name = toload;
+				dumplib(&lib);
+			}
 			handlemsg(msg);
 			break;
 		case QUEUEPOP:
@@ -105,7 +109,7 @@ libproc(void *arg)
 			case CLIST:
 				//TODO clean more
 				free(lib.name);
-				lib.name = c.list;
+				lib.name = strdup(c.list);
 				goto Load;
 			}
 			break;

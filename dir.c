@@ -72,7 +72,7 @@ songcmp(void *a, void *b)
 
 	switch(s1->type){
 	case FLAC:
-		t1 = s1->fmeta->com->tracknumber;
+		t1 = s1->fmeta->tracknumber;
 		break;
 	case VORBIS:
 		t1 = s1->vmeta->tracknumber;
@@ -83,7 +83,7 @@ songcmp(void *a, void *b)
 
 	switch(s2->type){
 	case FLAC:
-		t2 = s2->fmeta->com->tracknumber;
+		t2 = s2->fmeta->tracknumber;
 		break;
 	case VORBIS:
 		t2 = s2->vmeta->tracknumber;
@@ -133,7 +133,7 @@ dir2album(Album *a, char *path)
 		if(a->name == nil){
 			switch((a->songs+songcount)->type){
 			case FLAC:
-				albumtitle = (a->songs+songcount)->fmeta->com->album;
+				albumtitle = (a->songs+songcount)->fmeta->album;
 				break;
 			case MP3:
 				albumtitle = (a->songs+songcount)->idmeta->album;

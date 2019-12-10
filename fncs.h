@@ -17,7 +17,7 @@ ID3v1*	readid3(int);
 void	destroyid3(ID3v1 *id);
 
 /* vorbis.c */
-VorbisMeta*	parsevorbismeta(int, uvlong);
+void	parsevorbismeta(int, uvlong, VorbisMeta*);
 
 /* flac.c */
 FlacMeta*	readflacmeta(int, int);

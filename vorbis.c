@@ -32,16 +32,13 @@ finddefmeta(VorbisMeta *v)
 	}
 }
 
-VorbisMeta*
-parsevorbismeta(int fd, uvlong offset)
+void
+parsevorbismeta(int fd, uvlong offset, VorbisMeta *v)
 {
 	u32int size;
 	uchar buf[1024];
 	uint i;
-	VorbisMeta *v;
 	char *sep;
-
-	v = emalloc(sizeof(VorbisMeta));
 
 	/* Vendor String */
 	pread(fd, buf, 4, offset);
@@ -75,5 +72,4 @@ parsevorbismeta(int fd, uvlong offset)
 	}
 
 	finddefmeta(v);
-	return v;
 }

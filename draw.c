@@ -137,18 +137,11 @@ convpicbuf(uchar *buf, uvlong size, char *mime)
 Image*
 readcover(Song *s)
 {
-	FlacPic *p;
 	char buf[512], cover[512];
 	char *dot, *end;
 	int fd, n, i;
 	Dir *files;
 	Image *im;
-
-
-	if(s->type == FLAC && s->fmeta->pic != nil){
-		p = s->fmeta->pic;
-		return convpicbuf(p->data, p->size, p->mime);
-	}
 
 	dot = strrchr(s->path, '/');
 	if(dot == nil)
@@ -210,7 +203,7 @@ drawalbum(Album *a, Image *textcolor, Image *active, Point start, int cursong, C
 	for(i=0;i<a->nsong;i++){
 		switch((a->songs+i)->type){
 		case FLAC:
-			tracktitle = (a->songs+i)->fmeta->com->title;
+			tracktitle = (a->songs+i)->fmeta->title;
 			break;
 		case MP3:
 			tracktitle = (a->songs+i)->idmeta->title;
@@ -297,8 +290,7 @@ drawlists(Point p, Image *textcolor, Image *active, Image *background, Channel *
 	for(i=0;i<n;i++){
 		if((dot = strrchr(files[i].name, '.')) != nil)
 			*dot = '\0';
-		//vals can not be nil so we use a dummy
-		mapinsert(h, files[i].name, &r);
+		mapinsert(h, files[i].name, nil);
 	}
 	keys = emalloc(sizeof(char*)*n);
 	n = mapdumpkey(h, keys, n);

@@ -126,15 +126,29 @@ loadlib(Lib *l)
 	int size, cap;
 	int fd;
 	long r;
+	static Hmap *cache = nil;
+	Lib *new;
+	Lib *prev;
 
 	assert(l->name != nil);
-	libdir(buf, 512);
+	if(cache == nil)
+		cache = allocmap(32);
 
+	if((prev = mapget(cache, l->name)) != nil){
+		*l = *prev;
+		return;
+	}
+
+	new = emalloc(sizeof(Lib));
+
+	libdir(buf, 512);
 	/* Check for db cache file first */
 	snprint(fname, 512, "%s/%s.db", buf, l->name);
 	if((fd = open(fname, OREAD))>0){
-		unmarshallib(fd, l);
+		unmarshallib(fd, new);
 		close(fd);
+		mapinsert(cache, l->name, new);
+		*l = *new;
 		return;
 	}
 
@@ -145,23 +159,25 @@ loadlib(Lib *l)
 		quit(nil);
 	}
 	cap = 10;
-	l->start = emalloc(sizeof(Album)*cap);
+	new->start = emalloc(sizeof(Album)*cap);
 	for(size = 0;(r = Bgetrune(b)) > 0;size++){
 		if(size == cap-1){
 			cap = cap * 2;
-			l->start = realloc(l->start, sizeof(Album)*cap);
+			new->start = realloc(new->start, sizeof(Album)*cap);
 		}
 		if(r != L'\n'){
 			Bungetrune(b);
 		}
-		(l->start+size)->name = nil;
-		loadalbum(b, l->start+size);
+		(new->start+size)->name = nil;
+		loadalbum(b, new->start+size);
 	}
-	if((l->start+size)->name == nil){
+	if((new->start+size)->name == nil){
 		size--;
 	}
 	close(Bfildes(b));
 	free(b);
-	l->start = realloc(l->start, sizeof(Album)*size);
-	l->nalbum = size;
+	new->start = realloc(new->start, sizeof(Album)*size);
+	new->nalbum = size;
+	mapinsert(cache, l->name, new);
+	*l = *new;
 }

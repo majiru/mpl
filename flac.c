@@ -16,14 +16,12 @@ enum blocktype{
 	PICTURE,
 };
 
-FlacPic*
-readflacpic(int fd, vlong offset)
+void
+readflacpic(int fd, vlong offset, FlacPic *pic)
 {
 	uchar buf[1024];
 	uint len;
-	FlacPic *pic;
 
-	pic = emalloc(sizeof(FlacPic));
 	/* We skip the picture type */
 	offset+=4;
 
@@ -66,8 +64,6 @@ readflacpic(int fd, vlong offset)
 
 	pic->data = emalloc(pic->size);
 	pread(fd, pic->data, pic->size, offset);
-
-	return pic;
 }
 
 FlacMeta*
@@ -103,13 +99,13 @@ readflacmeta(int fd, int readpic)
 		case SEEKTABLE:
 			break;
 		case VORBIS_COMMENT:
-			f->com = parsevorbismeta(fd, off);
+			parsevorbismeta(fd, off, f);
 			break;
 		case CUESHEET:
 			break;
 		case PICTURE:
 			if(readpic > 0)
-				f->pic = readflacpic(fd, off);
+				readflacpic(fd, off, f);
 			break;
 		}
 		off+=bebtoi(buf, 3);

@@ -76,15 +76,13 @@ marshalvorbis(int fd, VorbisMeta *v)
 }
 
 void
-unmarshalvorbis(int fd, VorbisMeta **v)
+unmarshalvorbis(int fd, VorbisMeta *v)
 {
-	*v = emalloc(sizeof(VorbisMeta));
-	setmalloctag(*v, getcallerpc(&fd));
-	(*v)->title = unmarshalrune(fd);
-	(*v)->artist = unmarshalrune(fd);
-	(*v)->album = unmarshalrune(fd);
-	read(fd, &((*v)->year), sizeof (*v)->year);
-	read(fd, &((*v)->tracknumber), sizeof (*v)->tracknumber);
+	v->title = unmarshalrune(fd);
+	v->artist = unmarshalrune(fd);
+	v->album = unmarshalrune(fd);
+	read(fd, &(v->year), sizeof v->year);
+	read(fd, &(v->tracknumber), sizeof v->tracknumber);
 }
 
 void
@@ -108,7 +106,7 @@ unmarshalflacpic(int fd, FlacPic **p)
 void
 marshalflacmeta(int fd, FlacMeta *f)
 {
-	marshalvorbis(fd, f->com);
+	marshalvorbis(fd, f);
 //	marshalflacpic(fd, f->pic);
 }
 
@@ -116,7 +114,7 @@ void
 unmarshalflacmeta(int fd, FlacMeta **f)
 {
 	*f = emalloc(sizeof(FlacMeta));
-	unmarshalvorbis(fd, &((*f)->com));
+	unmarshalvorbis(fd, &((*f)->VorbisMeta));
 //	unmarshalflacpic(fd, &((*f)->pic));
 }
 

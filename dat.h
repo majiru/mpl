@@ -56,8 +56,8 @@ struct FlacPic{
 
 typedef struct FlacMeta FlacMeta;
 struct FlacMeta{
-	VorbisMeta *com;
-	FlacPic *pic;
+	VorbisMeta;
+	FlacPic;
 };
 
 
