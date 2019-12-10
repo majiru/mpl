@@ -6,10 +6,11 @@
 #include "dat.h"
 #include "fncs.h"
 
-int
+uvlong
 string2hash(char *s)
 {
-	int hash, i;
+	int i;
+	uvlong hash;
 	hash = 7;
 	for(i=0;i<strlen(s);i++)
 		hash = hash*31 + s[i];
@@ -29,6 +30,7 @@ void
 mapinsert(Hmap *h, char *key, void *val)
 {
 	Hnode *n;
+
 	wlock(h);
 	n = h->nodes+(string2hash(key)%h->size);
 	assert(n != nil);
