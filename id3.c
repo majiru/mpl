@@ -38,7 +38,6 @@ readid3(int fd)
 		return nil;
 
 	id = emalloc(sizeof(ID3v1));
-
 	if(memcmp(buf, "TAG", 3) != 0){
 		fillnotag(id, fd);
 		return id;
@@ -46,15 +45,15 @@ readid3(int fd)
 
 	memcpy(fieldbuf, buf+3, 30);
 	fieldbuf[30] = '\0';
-	id->title = emalloc(sizeof(Rune) * utflen(fieldbuf) + 1);
+	id->title = emalloc(sizeof(Rune) * 31);
 	runesprint(id->title, "%s", fieldbuf);
 
 	memcpy(fieldbuf, buf+33, 30);
-	id->artist = emalloc(sizeof(Rune) * utflen(fieldbuf) + 1);
+	id->artist = emalloc(sizeof(Rune) * 31);
 	runesprint(id->artist, "%s", fieldbuf);
 
 	memcpy(fieldbuf, buf+63, 30);
-	id->album = emalloc(sizeof(Rune) * utflen(fieldbuf) + 1);
+	id->album = emalloc(sizeof(Rune) * 31);
 	runesprint(id->album, "%s", fieldbuf);
 
 	memcpy(fieldbuf, buf+93, 4);
@@ -63,7 +62,7 @@ readid3(int fd)
 
 	memcpy(fieldbuf, buf+97, 30);
 	fieldbuf[30] = '\0';
-	id->comment = emalloc(sizeof(Rune) * utflen(fieldbuf) + 1);
+	id->comment = emalloc(sizeof(Rune) * 31);
 	runesprint(id->comment, "%s", fieldbuf);
 
 	id->genre = buf[127];

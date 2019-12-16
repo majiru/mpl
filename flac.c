@@ -76,9 +76,8 @@ readflacmeta(int fd, int readpic)
 
 	pread(fd, buf, 4, 0);
 
-	if(memcmp(buf, "fLaC", 4) != 0){
+	if(memcmp(buf, "fLaC", 4) != 0)
 		return nil;
-	}
 	off=4;
 
 	f = emalloc(sizeof(FlacMeta));

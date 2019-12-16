@@ -222,6 +222,8 @@ spawnlib(Channel *ctl, Channel *out, Channel *ein, Channel *redraw, Channel *loa
 
 	lib.cursong = 0;
 	lib.cur = lib.start;
+	if(lib.cur->nsong == 0)
+		sysfatal("No songs found");
 
 	chans = emalloc(sizeof(Channel*)*5);
 	chans[0] = ctl;

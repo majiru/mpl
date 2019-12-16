@@ -147,7 +147,7 @@ readcover(Song *s)
 	if(dot == nil)
 		sysfatal("readcover: bad song path");
 	end = buf+(dot-s->path)+1;
-	if(end - buf > sizeof buf)
+	if(end - buf >= sizeof buf)
 		sysfatal("readcover: buffer too small");
 	seprint(buf, end, "%s", s->path);
 
