@@ -124,7 +124,6 @@ typedef struct Hnode Hnode;
 struct Hmap{
 	RWLock;
 	int size;
-	int (*hashfn)(void*);
 	struct Hnode{
 		char *key;
 		void *val;

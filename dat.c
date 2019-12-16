@@ -12,8 +12,8 @@ string2hash(char *s)
 	int i;
 	uvlong hash;
 	hash = 7;
-	for(i=0;i<strlen(s);i++)
-		hash = hash*31 + s[i];
+	for(;*s;s++)
+		hash = hash*31 + *s;
 	return hash;
 }
 
@@ -29,31 +29,31 @@ allocmap(int size)
 void
 mapinsert(Hmap *h, char *key, void *val)
 {
-	Hnode *n;
+	Hnode *n, *end;
 
 	wlock(h);
 	n = h->nodes+(string2hash(key)%h->size);
 	assert(n != nil);
-	for(;n->next!=nil || n->key!=nil ;n=n->next)
-		if(strcmp(key, n->key) == 0){
-			/* update value */
-			n->val = val;
-			wunlock(h);
-			return;
-		}
-
-	/* Set existing free node */
-	if(n->key == nil){
-		n->key = strdup(key);
-		n->val = val;
-		wunlock(h);
-		return;
-	}
+	do {
+		if(n->key == nil)
+			goto new;
+		else if(strcmp(key, n->key) == 0)
+			goto found;
+		
+		end = n;
+		n = n->next;
+	} while(n != nil);
+	n = end;
 
 	/* create new node */
 	n->next = emalloc(sizeof(Hnode));
-	n->next->key = strdup(key);
-	n->next->val = val;
+	n = n->next;
+
+new:
+	n->key = strdup(key);
+
+found:
+	n->val = val;
 	wunlock(h);
 }
 
@@ -61,6 +61,7 @@ void*
 mapget(Hmap *h, char *key)
 {
 	Hnode *n;
+
 	rlock(h);
 	n = h->nodes+(string2hash(key)%h->size);
 	for(;n!=nil;n=n->next){
@@ -107,9 +108,10 @@ mapdump(Hmap *h, void **buf, int size)
 	for(i=c=0;i<h->size;i++)
 		for(n=h->nodes+i;n!=nil && n->key!=nil;n=n->next){
 			if(c >= size)
-				return c;
+				goto done;
 			buf[c++] = n->val;
 		}
+done:
 	runlock(h);
 	return c;
 }
@@ -124,9 +126,10 @@ mapdumpkey(Hmap *h, char **buf, int size)
 	for(i=c=0;i<h->size;i++)
 		for(n=h->nodes+i;n!=nil && n->key!=nil;n=n->next){
 			if(c >= size)
-				return c;
+				goto done;
 			buf[c++] = n->key;
 		}
+done:
 	runlock(h);
 	return c;
 }
