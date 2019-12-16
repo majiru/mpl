@@ -91,8 +91,9 @@ libproc(void *arg)
 				/* TODO: rename chan to imply this use */
 				toload = recvp(loadc);
 				free(lib.name);
-				lib.name = toload;
+				lib.name = strdup(toload);
 				dumplib(&lib);
+				break;
 			}
 			handlemsg(msg);
 			break;
