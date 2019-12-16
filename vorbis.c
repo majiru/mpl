@@ -36,7 +36,7 @@ void
 parsevorbismeta(int fd, uvlong offset, VorbisMeta *v)
 {
 	u32int size;
-	uchar buf[1024];
+	uchar buf[4096];
 	uint i;
 	char *sep;
 
@@ -54,6 +54,9 @@ parsevorbismeta(int fd, uvlong offset, VorbisMeta *v)
 	for(i=0;i<v->ncom;i++){
 		pread(fd, buf, 4, offset);
 		size = lebtoi(buf, 4);
+		/* TODO: We should ignore large comments, and trim those that we dont use */
+		if(size >= sizeof buf)
+			sysfatal("parsevorbismeta: comment greater then buff size");
 		offset+=4;
 
 		pread(fd, buf, size, offset);
