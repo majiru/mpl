@@ -1,0 +1,150 @@
+.TH MPL 1
+.SH NAME
+mpl \- music player
+.SH SYNOPSIS
+.B mpl
+[
+.B -m
+.I library
+]
+.br
+.B mpl
+[
+.B -s
+.I album
+]
+.br
+.B mpl
+[
+.B -r
+.I radio
+]
+.br
+.B mpl
+[
+.B -p
+.I playlist
+]
+.br
+.B mpl
+[
+.B -f
+.I file
+]
+.SH DESCRIPTION
+.I mpl
+is a graphical music player.
+.I mpl
+will gather meta information from audio files
+by reading ID3v1 or FLAC meta information
+stored in the files.
+.I mpl
+will search audio files for embeded cover art
+as well as cover image files within the album
+directory.
+.br
+.I mpl
+has 5 exclusive modes for initalizing the playlist.
+.TF -rmachine
+.TP
+.B -m
+Multi. This will load many albums from a directory containing one
+album per child directory.
+.TP
+.B -s
+Single. This will load a single album directory.
+.TP
+.B -r
+Radio. This will initialize the playlist to follow a
+.IR hubfs(1)
+.I radio
+file.
+.I mpl
+will expect there to be an updating
+.I playing
+file under the same directory to read the current song.
+.TP
+.B -f
+File. This will load a single audio file.
+.TP
+.B -p
+Playlist. This will load from a
+.I .list
+file stored under the mpl directory
+stored in
+.B $home/lib/mpl.
+.PD
+.SS Player controls
+.TF -rmachine
+.TP
+.B Del
+Exit the program.
+.TP
+.B S
+Toggle the sidebar playlist view.
+.TP
+.B P
+Pause the current song.
+.TP
+.B L
+Resume the current song.
+.TP
+.B N
+Skip to the next song in the album.
+.TP
+.B M
+Skip backwards to the previous song in the album.
+.TP
+.B 9
+Increase volume.
+.TP
+.B 0
+Decrease volume.
+.TP
+.B D
+Dump the current playlist to a
+.I .list
+and
+.I .db
+file.
+.TP
+.B O
+Open a playlist under the playlist directory by name.
+.PD
+Additionally users can change the current song and playlist
+by clicking the name.
+.SS Playlist File Format
+.I mpl
+uses two different file formats:
+.br
+.I .db
+files are used internally for caching meta information
+for a matching playlist and should not be edited by the user.
+.br
+.I .list
+files can be writen by the user and placed in
+.B $home/lib/mpl.
+Each list file can contain one or more albums. Albums are defined as
+the album name followed by a newline, then the path of each song seperated
+by a newline. Albums are seperated by two newlines following the last song.
+Once the playlist has been loaded, the user can issue the 
+.B dump
+command to generate a
+.I .db
+cache of the meta information.
+.B dump
+will also generate or update a
+.I .list
+file for the current playlist.
+.SH DIAGNOSTICS
+When using the
+.B radio
+option, the current playing file and the
+name displayed may become out of sync.
+.SH SOURCE
+https://github.com/majiru/mpl
+.SH BUGS
+Quite possibly.
+.SH SEE ALSO
+.IR juke(7),
+.IR playlistfs(7)
