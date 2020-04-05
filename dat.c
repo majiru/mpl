@@ -9,7 +9,6 @@
 uvlong
 string2hash(char *s)
 {
-	int i;
 	uvlong hash;
 	hash = 7;
 	for(;*s;s++)

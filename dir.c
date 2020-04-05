@@ -111,7 +111,6 @@ dir2album(Album *a, char *path)
 	Rune *albumtitle;
 	char buf[512];
 	int songcount = 0;
-	int needpic = 0;
 
 	fd = open(path, OREAD);
 	if(fd < 0)
