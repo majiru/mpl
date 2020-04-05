@@ -29,31 +29,31 @@ allocmap(int size)
 void
 mapinsert(Hmap *h, char *key, void *val)
 {
-	Hnode *n, *end;
+	Hnode *n;
 
 	wlock(h);
 	n = h->nodes+(string2hash(key)%h->size);
 	assert(n != nil);
-	do {
+	for(;;){
 		if(n->key == nil)
-			goto new;
-		else if(strcmp(key, n->key) == 0)
+			goto empty;
+		if(strcmp(key, n->key) == 0)
 			goto found;
-		
-		end = n;
+		if(n->next == nil)
+			break;
 		n = n->next;
-	} while(n != nil);
-	n = end;
+	}
 
 	/* create new node */
 	n->next = emalloc(sizeof(Hnode));
 	n = n->next;
 
-new:
+empty:
 	n->key = strdup(key);
 
 found:
 	n->val = val;
+
 	wunlock(h);
 }
 
