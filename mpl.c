@@ -34,7 +34,7 @@ Image *listbackground;
 int
 cleanup(void*,char*)
 {
-	killgrp(decpid);
+	postnote(PNGROUP, decpid, "kill");
 	closedisplay(display);
 	closemouse(mctl);
 	closekeyboard(kctl);
@@ -80,7 +80,7 @@ handleaction(Rune kbd)
 	switch(kbd){
 		case Kbs:
 		case Kdel:
-			killgrp(decpid);
+			postnote(PNGROUP, decpid, "kill");
 			quit(nil);
 			return;
 		case 'w':

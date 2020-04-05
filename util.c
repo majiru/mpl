@@ -58,20 +58,6 @@ kill(int pid)
 	free(note);
 }
 
-void
-killgrp(int pid)
-{
-	int nfd;
-	char *note = smprint( "/proc/%d/notepg", pid);
-	nfd = open(note, OWRITE);
-	if(nfd<0)
-		sysfatal("proc doesn't exist");
-	if(write(nfd, "kill", 4)!=4)
-		sysfatal("could not write to note");
-	close(nfd);
-	free(note);
-}
-
 int
 runecstrcmp(Rune *s1, Rune *s2)
 {

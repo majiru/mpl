@@ -9,7 +9,6 @@ void*	emalloc(vlong);
 u64int	bebtoi(uchar*,int);
 u64int	lebtoi(uchar*,int);
 void	kill(int);
-void	killgrp(int);
 int		runecstrcmp(Rune*,Rune*);
 
 /* id3.c */

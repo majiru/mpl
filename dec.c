@@ -136,7 +136,7 @@ ctlproc(void *arg)
 				break;
 			case CTL:
 				if(msg == NEXT){
-					killgrp(decpid);
+					postnote(PNGROUP, decpid, "kill");
 					decpid = -1;
 					send(pop, nil);
 				}else
@@ -145,7 +145,7 @@ ctlproc(void *arg)
 			case QUEUE:
 				a.file = path;
 				if(decpid != -1)
-					killgrp(decpid);
+					postnote(PNGROUP, decpid, "kill");
 				procrfork(decodeproc, &a, 8192, RFFDG);
 				recv(a.cpid, &decpid);
 				break;
@@ -157,7 +157,7 @@ ctlproc(void *arg)
 
 cleanup:
 	if(decpid != -1)
-		killgrp(decpid);
+		postnote(PNGROUP, decpid, "kill");
 	chanfree(wr.ctl);
 	chanfree(a.cpid);
 	close(p[0]);
