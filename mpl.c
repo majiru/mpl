@@ -62,7 +62,7 @@ eresized(int isnew)
 	draw(screen, screen->r, background, nil, ZP);
 	recv(lout, &lib);
 	if(showlists) {
-		drawlists(p, black, red, listbackground, clickin);
+		drawlists(p, black, listbackground, clickin);
 		p.x+=256;
 	}
 	drawlibrary(&lib, p, black, red, clickin);

@@ -28,7 +28,7 @@ Image*	convpic(int, char*);
 Image*	convpicbuf(uchar*, uvlong, char*);
 void	drawlibrary(Lib*, Point, Image*, Image*, Channel*);
 void	drawvolume(int, Image*);
-void	drawlists(Point,Image*,Image*,Image*,Channel*);
+void	drawlists(Point,Image*,Image*,Channel*);
 
 /* dir.c */
 int		file2song(Song*, char*,int);

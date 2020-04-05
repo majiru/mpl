@@ -258,7 +258,7 @@ drawlibrary(Lib *l, Point p, Image *textcolor, Image *active, Channel *clickout)
 }
 
 void
-drawlists(Point p, Image *textcolor, Image *active, Image *background, Channel *clickout)
+drawlists(Point p, Image *textcolor, Image *background, Channel *clickout)
 {
 	Rectangle r;
 	int n, i;
