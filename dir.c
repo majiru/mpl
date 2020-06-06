@@ -44,7 +44,9 @@ done:
 		s->fmeta = readflacmeta(fd, needpic);
 		break;
 	case MP3:
-		s->idmeta = readid3(fd);
+		s->idmeta = readid3v2(fd);
+		if(s->idmeta == nil)
+			s->idmeta = readid3(fd);
 		break;
 	case VORBIS:
 		/* TODO parse raw ogg file */

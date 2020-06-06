@@ -13,6 +13,7 @@ int		runecstrcmp(Rune*,Rune*);
 
 /* id3.c */
 ID3v1*	readid3(int);
+ID3v1*	readid3v2(int);
 void	destroyid3(ID3v1 *id);
 
 /* vorbis.c */
