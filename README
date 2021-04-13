@@ -1,7 +1,9 @@
-mpl is a graphical music player for 9front
+mpl is a graphical music player for 9front.
 
-Building:
-	; mk
+= NOTICE =
+This repo is now an archive, for a graphical music player on 9front
+see zuke(1). mpl was written during my undergraduate to explore CSP
+design for graphical programming, and has not been touched outside
+of then.
 
-Installing:
-	; mk install
+zuke(1): https://git.sr.ht/~ft/zuke
